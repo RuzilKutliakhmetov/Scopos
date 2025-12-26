@@ -11,7 +11,7 @@ const EquipmentDetailsViewComponent: React.FC<EquipmentDetailsViewProps> = ({
 	onBack,
 }) => {
 	return (
-		<div className='h-full overflow-auto p-6'>
+		<div className='h-full overflow-auto p-6 table-scrollbar'>
 			<button
 				onClick={onBack}
 				className='flex items-center text-sm text-blue-300 hover:text-white transition-colors mb-6 cursor-pointer'
@@ -46,13 +46,14 @@ const EquipmentDetailsViewComponent: React.FC<EquipmentDetailsViewProps> = ({
 	)
 }
 
+// В EquipmentDetailsView.tsx убираем поле "Производитель" если нужно:
 const DetailsColumn: React.FC<{ equipment: EquipmentDetails }> = memo(
 	({ equipment }) => (
 		<div className='space-y-4'>
 			<DetailItem label='Код оборудования' value={equipment.code} isMonospace />
 			<DetailItem label='Класс оборудования' value={equipment.className} />
 			{equipment.type && <DetailItem label='Тип' value={equipment.type} />}
-			<DetailItem label='Производитель' value={equipment.manufacturer} />
+			{/* Убрали Производителя */}
 			<DetailItem
 				label='Инвентарный номер'
 				value={equipment.inventoryNumber}
@@ -61,7 +62,6 @@ const DetailsColumn: React.FC<{ equipment: EquipmentDetails }> = memo(
 		</div>
 	)
 )
-
 const AdditionalDetailsColumn: React.FC<{ equipment: EquipmentDetails }> = memo(
 	({ equipment }) => (
 		<div className='space-y-4'>

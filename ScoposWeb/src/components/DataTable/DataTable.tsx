@@ -3,7 +3,7 @@ import { emitCustomEvent, useCustomEvent } from '../../hooks/useCustomEvent'
 import type { EquipmentDetails, EquipmentItem } from '../../types/api'
 import EquipmentDetailsView from './EquipmentDetailsView'
 import TableHeader from './TableHeader'
-import TableView from './TableView'
+import UnifiedTableView from './UnifiedTableView'
 
 interface DataTableProps {
 	isOpen: boolean
@@ -21,9 +21,6 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 		useState<EquipmentDetails | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const [currentSelectedCode, setCurrentSelectedCode] = useState<
-		string | undefined
-	>()
 
 	// Загружаем данные при открытии таблицы
 	useEffect(() => {
@@ -32,35 +29,22 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 		}
 	}, [isOpen])
 
-	// Обновляем при получении нового кода извне (например, при клике на объект)
+	// При изменении selectedObjectCode загружаем новые данные
 	useEffect(() => {
-		if (selectedObjectCode && selectedObjectCode !== currentSelectedCode) {
-			console.log(`📥 Новый код получен извне: ${selectedObjectCode}`)
-			setCurrentSelectedCode(selectedObjectCode)
+		if (isOpen && selectedObjectCode) {
+			console.log(
+				`🔄 Загрузка данных для нового объекта: ${selectedObjectCode}`
+			)
 			handleSelectEquipment(selectedObjectCode)
 		}
-	}, [selectedObjectCode])
+	}, [isOpen, selectedObjectCode])
 
-	// Также слушаем события открытия деталей
-	// useCustomEvent<{ code: string }>(
-	// 	'open-equipment-details',
-	// 	useCallback(
-	// 		detail => {
-	// 			console.log(`📥 Событие открытия деталей: ${detail.code}`)
-	// 			if (detail.code !== currentSelectedCode) {
-	// 				setCurrentSelectedCode(detail.code)
-	// 				handleSelectEquipment(detail.code)
-	// 			}
-	// 		},
-	// 		[currentSelectedCode]
-	// 	)
-	// )
-
+	// Слушаем события открытия деталей
 	useCustomEvent<{ code: string }>(
 		'open-equipment-details',
 		useCallback(
 			detail => {
-				console.log(`📥 Прямое событие открытия в DataTable: ${detail.code}`)
+				console.log(`📥 Событие открытия деталей: ${detail.code}`)
 				if (isOpen) {
 					handleSelectEquipment(detail.code)
 				}
@@ -90,17 +74,16 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 			const { apiService } = await import('../../services/api')
 			const details = await apiService.getEquipmentByCode(modelCode)
 			setSelectedEquipment(details)
-			console.log(`✅ Данные загружены для: ${modelCode}`)
+			console.log(`✅ Данные обновлены для: ${modelCode}`)
 		} catch (err) {
 			console.log(`ℹ️ Нет данных для: ${modelCode}`)
-			setSelectedEquipment(null) // Сбрасываем, если нет данных
+			setSelectedEquipment(null)
 		}
 	}
 
 	const handleClose = () => {
 		emitCustomEvent('clear-selections')
 		setSelectedEquipment(null)
-		setCurrentSelectedCode(undefined)
 		setError(null)
 		onClose()
 	}
@@ -108,7 +91,6 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 	const handleBackToList = () => {
 		emitCustomEvent('clear-selections')
 		setSelectedEquipment(null)
-		setCurrentSelectedCode(undefined)
 		setError(null)
 	}
 
@@ -134,7 +116,7 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 							onBack={handleBackToList}
 						/>
 					) : (
-						<TableView
+						<UnifiedTableView
 							equipmentList={equipmentList}
 							loading={loading}
 							error={error}
