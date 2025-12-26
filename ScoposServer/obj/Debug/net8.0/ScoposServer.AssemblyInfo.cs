@@ -11,11 +11,10 @@
 using System;
 using System.Reflection;
 
-[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("755de1b1-df23-4873-bf4b-542f2422fc85")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("ScoposServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1ba87f357057e31aef5299be0332e471455b93e1")]
 [assembly: System.Reflection.AssemblyProductAttribute("ScoposServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ScoposServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

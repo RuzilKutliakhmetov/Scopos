@@ -36,7 +36,7 @@ public class EqEquipmentController : ControllerBase
     public async Task<ActionResult<EqEquipmentPassportDto>> GetByCode(string code)
     {
         var entity = await _context.EqEquipments
-            .FirstOrDefaultAsync(x => x.Code == code);
+            .FirstOrDefaultAsync(x => x.ModelCode == code);
 
         if (entity == null)
             return NotFound();

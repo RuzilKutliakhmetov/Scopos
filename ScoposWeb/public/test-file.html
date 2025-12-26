@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Тест загрузки GLB файла</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				padding: 20px;
+				background: #1a1a1a;
+				color: white;
+			}
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+			}
+			.test-result {
+				padding: 15px;
+				margin: 10px 0;
+				border-radius: 5px;
+				background: #2d2d2d;
+			}
+			.success {
+				border-left: 4px solid #4caf50;
+			}
+			.error {
+				border-left: 4px solid #f44336;
+			}
+			.loading {
+				border-left: 4px solid #ff9800;
+			}
+			code {
+				background: #000;
+				padding: 2px 6px;
+				border-radius: 3px;
+				font-family: monospace;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>🔍 Тест доступности GLB файла</h1>
+
+			<div id="results">
+				<div class="test-result loading">
+					<h3>Тестирование...</h3>
+					<p>Проверяем доступность файла KS-17_optimized.glb</p>
+				</div>
+			</div>
+
+			<div id="direct-links" style="margin-top: 20px; display: none">
+				<h3>Прямые ссылки на файл:</h3>
+				<ul id="link-list"></ul>
+			</div>
+		</div>
+
+		<script>
+			const modelName = 'KS-17_optimized.glb'
+			const pathsToTest = [
+				`/models/${modelName}`,
+				`/public/models/${modelName}`,
+				`./models/${modelName}`,
+				`/${modelName}`,
+				`/public/${modelName}`,
+			]
+
+			const resultsDiv = document.getElementById('results')
+			const directLinksDiv = document.getElementById('direct-links')
+			const linkList = document.getElementById('link-list')
+
+			async function testPath(path) {
+				try {
+					const response = await fetch(path)
+					const resultDiv = document.createElement('div')
+
+					if (response.ok) {
+						resultDiv.className = 'test-result success'
+						resultDiv.innerHTML = `
+                        <h3>✅ Файл найден!</h3>
+                        <p>Путь: <code>${path}</code></p>
+                        <p>Статус: ${response.status} ${response.statusText}</p>
+                        <p>Размер: ${
+													response.headers.get('content-length') || 'неизвестно'
+												} байт</p>
+                    `
+
+						// Добавляем прямую ссылку
+						const listItem = document.createElement('li')
+						listItem.innerHTML = `<a href="${path}" target="_blank">Открыть ${path}</a>`
+						linkList.appendChild(listItem)
+						directLinksDiv.style.display = 'block'
+					} else {
+						resultDiv.className = 'test-result error'
+						resultDiv.innerHTML = `
+                        <h3>❌ Файл не найден</h3>
+                        <p>Путь: <code>${path}</code></p>
+                        <p>Статус: ${response.status} ${response.statusText}</p>
+                    `
+					}
+
+					resultsDiv.appendChild(resultDiv)
+				} catch (error) {
+					const resultDiv = document.createElement('div')
+					resultDiv.className = 'test-result error'
+					resultDiv.innerHTML = `
+                    <h3>❌ Ошибка при проверке</h3>
+                    <p>Путь: <code>${path}</code></p>
+                    <p>Ошибка: ${error.message}</p>
+                `
+					resultsDiv.appendChild(resultDiv)
+				}
+			}
+
+			async function runAllTests() {
+				// Убираем loading сообщение
+				resultsDiv.innerHTML = ''
+
+				for (const path of pathsToTest) {
+					await testPath(path)
+				}
+
+				// Проверяем структуру public через fetch
+				try {
+					const publicResponse = await fetch('/')
+					const publicResult = document.createElement('div')
+					publicResult.className = 'test-result loading'
+					publicResult.innerHTML = `
+                    <h3>📁 Структура корневой папки</h3>
+                    <p>Корневой URL доступен: ${
+											publicResponse.ok ? '✅' : '❌'
+										}</p>
+                `
+					resultsDiv.appendChild(publicResult)
+				} catch (error) {
+					console.error('Ошибка проверки корня:', error)
+				}
+			}
+
+			// Запускаем тесты
+			runAllTests()
+		</script>
+	</body>
+</html>

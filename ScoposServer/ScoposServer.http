@@ -1,4 +1,4 @@
-@ScoposServer_HostAddress = http://localhost:5058
+@ScoposServer_HostAddress = http://localhost:5244
 
 GET {{ScoposServer_HostAddress}}/weatherforecast/
 Accept: application/json
