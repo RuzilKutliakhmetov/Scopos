@@ -123,6 +123,7 @@ export const createSmartObjectFinder = (scene: THREE.Object3D) => {
 		}
 
 		let foundObject: THREE.Object3D | null = null
+		console.log(searchName)
 		const searchLower = searchName.toLowerCase()
 
 		// 1. Точное совпадение

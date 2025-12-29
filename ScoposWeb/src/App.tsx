@@ -15,6 +15,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import LoadingSpinner from './components/LoadingSpinner'
 import {
 	CustomOrbitControls,
+	EquipmentFilterManager,
 	FocusController,
 	LayerManager,
 	Lighting,
@@ -23,6 +24,7 @@ import {
 } from './components/Three'
 
 import { DataTableProvider } from './context/DataTableContext'
+import { EquipmentFilterProvider } from './context/EquipmentFilterContext'
 import { SelectionProvider } from './context/SelectionContext'
 import { emitCustomEvent, useCustomEvent } from './hooks/useCustomEvent'
 import { useViewerConfig } from './hooks/useViewerConfig'
@@ -210,64 +212,67 @@ function App() {
 	return (
 		<SelectionProvider>
 			<DataTableProvider>
-				<div
-					className='w-screen h-screen overflow-hidden relative'
-					style={{ backgroundColor: config.ui.backgroundColor }}
-				>
-					{/* Toolbar рендерится всегда, независимо от состояния таблицы */}
-					<Suspense fallback={null}>
-						<ToolbarMemo
-							onResetCamera={handleResetCamera}
-							onPipelineToggle={handlePipelineToggle}
-							onBackgroundToggle={handleBackgroundToggle}
-							onOpenTable={handleOpenTable}
-							isPipelineMode={isPipelineMode}
-							showBackground={showBackground}
-							isTableOpen={showTable} // Передаем состояние таблицы
-						/>
-					</Suspense>
-
-					{/* DataTable с сохранением состояния фильтров */}
-					<Suspense fallback={null}>
-						<DataTableMemo
-							isOpen={showTable}
-							onClose={handleCloseTable}
-							selectedObjectCode={selectedEquipmentCode}
-						/>
-					</Suspense>
-
-					<ErrorBoundary>
-						<Canvas
-							camera={cameraConfig}
-							onCreated={({ camera, scene }) => {
-								Object.values(config.layers).forEach(layer => {
-									camera.layers.enable(layer)
-								})
-
-								camera.lookAt(...config.camera.target)
-								scene.add(camera)
-
-								console.log('🎥 Камера инициализирована')
-								emitCustomEvent('scene-ready', { scene })
-							}}
-							gl={{
-								antialias: config.rendering.antialias,
-								outputColorSpace: config.rendering.outputColorSpace,
-							}}
-						>
-							<Lighting />
-							<RenderOptimization />
-							<LayerManager
+				<EquipmentFilterProvider>
+					<div
+						className='w-screen h-screen overflow-hidden relative'
+						style={{ backgroundColor: config.ui.backgroundColor }}
+					>
+						{/* Toolbar рендерится всегда, независимо от состояния таблицы */}
+						<Suspense fallback={null}>
+							<ToolbarMemo
+								onResetCamera={handleResetCamera}
+								onPipelineToggle={handlePipelineToggle}
+								onBackgroundToggle={handleBackgroundToggle}
+								onOpenTable={handleOpenTable}
 								isPipelineMode={isPipelineMode}
 								showBackground={showBackground}
+								isTableOpen={showTable} // Передаем состояние таблицы
 							/>
-							{model && <primitive object={model} />}
-							<SelectionManager />
-							<CustomOrbitControls />
-							<FocusController />
-						</Canvas>
-					</ErrorBoundary>
-				</div>
+						</Suspense>
+
+						{/* DataTable с сохранением состояния фильтров */}
+						<Suspense fallback={null}>
+							<DataTableMemo
+								isOpen={showTable}
+								onClose={handleCloseTable}
+								selectedObjectCode={selectedEquipmentCode}
+							/>
+						</Suspense>
+
+						<ErrorBoundary>
+							<Canvas
+								camera={cameraConfig}
+								onCreated={({ camera, scene }) => {
+									Object.values(config.layers).forEach(layer => {
+										camera.layers.enable(layer)
+									})
+
+									camera.lookAt(...config.camera.target)
+									scene.add(camera)
+
+									console.log('🎥 Камера инициализирована')
+									emitCustomEvent('scene-ready', { scene })
+								}}
+								gl={{
+									antialias: config.rendering.antialias,
+									outputColorSpace: config.rendering.outputColorSpace,
+								}}
+							>
+								<Lighting />
+								<RenderOptimization />
+								<LayerManager
+									isPipelineMode={isPipelineMode}
+									showBackground={showBackground}
+								/>
+								{model && <primitive object={model} />}
+								<SelectionManager />
+								<EquipmentFilterManager />
+								<CustomOrbitControls />
+								<FocusController />
+							</Canvas>
+						</ErrorBoundary>
+					</div>
+				</EquipmentFilterProvider>
 			</DataTableProvider>
 		</SelectionProvider>
 	)

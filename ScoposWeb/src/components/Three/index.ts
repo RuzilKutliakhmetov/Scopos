@@ -1,4 +1,5 @@
 export { default as CustomOrbitControls } from './CustomOrbitControls'
+export { default as EquipmentFilterManager } from './EquipmentFilterManager'
 export { default as FocusController } from './FocusController'
 export { default as LayerManager } from './LayerManager'
 export { default as Lighting } from './Lighting'

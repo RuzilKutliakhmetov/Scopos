@@ -112,6 +112,55 @@ class ApiService {
 		throw new Error('Max retries exceeded')
 	}
 
+	// Добавить в класс ApiService
+	// Получить просроченные объекты
+	async getOverdueEquipment(): Promise<string[]> {
+		return this.requestWithRetry(async () => {
+			try {
+				const response = await this.api.get<string[]>(
+					'/api/equipment/overdue-simple'
+				)
+				return response.data
+			} catch (error: any) {
+				console.error('Error fetching overdue equipment:', error)
+
+				// Тестовые данные для разработки
+				if (import.meta.env.DEV) {
+					console.warn(
+						'⚠️ Используем тестовые данные для просроченного оборудования'
+					)
+					return ['301-123', '302-456', '303-789', '304-012']
+				}
+
+				throw error
+			}
+		})
+	}
+
+	// Получить объекты с дефектами
+	async getDefectiveEquipment(): Promise<string[]> {
+		return this.requestWithRetry(async () => {
+			try {
+				const response = await this.api.get<string[]>(
+					'/api/notify/equipment/modelcodes'
+				)
+				return response.data
+			} catch (error: any) {
+				console.error('Error fetching defective equipment:', error)
+
+				// Тестовые данные для разработки
+				if (import.meta.env.DEV) {
+					console.warn(
+						'⚠️ Используем тестовые данные для оборудования с дефектами'
+					)
+					return ['305-678', '306-901', '307-234', '308-567']
+				}
+
+				throw error
+			}
+		})
+	}
+
 	// Получить все оборудование
 	async getAllEquipment(): Promise<EquipmentItem[]> {
 		return this.requestWithRetry(async () => {

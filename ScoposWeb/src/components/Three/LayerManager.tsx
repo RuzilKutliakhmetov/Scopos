@@ -1,6 +1,7 @@
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import { VIEWER_CONFIG } from '../../config/viewerConfig'
+import { useEquipmentFilter } from '../../context/EquipmentFilterContext'
 
 interface LayerManagerProps {
 	isPipelineMode: boolean
@@ -12,13 +13,23 @@ const LayerManager = ({
 	showBackground,
 }: LayerManagerProps) => {
 	const { camera } = useThree()
+	const { filterMode } = useEquipmentFilter()
 
 	useEffect(() => {
 		if (!camera) return
 
-		console.log('🔄 Обновление слоев:', { isPipelineMode, showBackground })
+		console.log('🔄 Обновление слоев:', {
+			isPipelineMode,
+			showBackground,
+			filterMode,
+		})
 
-		if (isPipelineMode) {
+		// При активном режиме фильтрации показываем все объекты трубопроводов
+		if (filterMode) {
+			camera.layers.enable(VIEWER_CONFIG.layers.pipeline)
+			camera.layers.disable(VIEWER_CONFIG.layers.background)
+			camera.layers.disable(VIEWER_CONFIG.layers.others)
+		} else if (isPipelineMode) {
 			// Режим только трубопроводы
 			camera.layers.enable(VIEWER_CONFIG.layers.pipeline)
 			camera.layers.disable(VIEWER_CONFIG.layers.background)
@@ -34,7 +45,7 @@ const LayerManager = ({
 				camera.layers.disable(VIEWER_CONFIG.layers.background)
 			}
 		}
-	}, [camera, isPipelineMode, showBackground])
+	}, [camera, isPipelineMode, showBackground, filterMode])
 
 	return null
 }

@@ -1,4 +1,5 @@
 import React, { memo, useEffect } from 'react'
+import { useEquipmentFilter } from '../context/EquipmentFilterContext'
 
 interface ToolbarProps {
 	onResetCamera: () => void
@@ -7,7 +8,7 @@ interface ToolbarProps {
 	onOpenTable: () => void
 	isPipelineMode: boolean
 	showBackground: boolean
-	isTableOpen?: boolean // Новый пропс
+	isTableOpen?: boolean
 }
 
 const ToolbarComponent: React.FC<ToolbarProps> = ({
@@ -17,8 +18,10 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 	onOpenTable,
 	isPipelineMode,
 	showBackground,
-	isTableOpen = false, // По умолчанию false
+	isTableOpen = false,
 }) => {
+	const { filterMode, isLoading, setFilterMode } = useEquipmentFilter()
+
 	useEffect(() => {
 		const handleKeyPress = (e: KeyboardEvent) => {
 			if (e.ctrlKey || e.metaKey) {
@@ -39,6 +42,14 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 						e.preventDefault()
 						if (!isTableOpen) onOpenTable()
 						break
+					case 'o':
+						e.preventDefault()
+						setFilterMode('overdue')
+						break
+					case 'd':
+						e.preventDefault()
+						setFilterMode('defective')
+						break
 					case '?':
 						e.preventDefault()
 						break
@@ -54,7 +65,8 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 		onBackgroundToggle,
 		onOpenTable,
 		isPipelineMode,
-		isTableOpen, // Добавлен в зависимости
+		isTableOpen,
+		setFilterMode,
 	])
 
 	const ToolbarButton = React.memo(
@@ -65,6 +77,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 			active = false,
 			disabled = false,
 			shortcut,
+			loading = false,
 		}: {
 			onClick: () => void
 			title: string
@@ -72,20 +85,25 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 			active?: boolean
 			disabled?: boolean
 			shortcut?: string
+			loading?: boolean
 		}) => (
 			<button
 				onClick={onClick}
-				disabled={disabled}
+				disabled={disabled || loading}
 				className={`p-3 rounded-lg transition-all duration-200 group relative cursor-pointer ${
 					active
 						? 'bg-blue-600 text-white'
-						: disabled
+						: disabled || loading
 						? 'opacity-50 cursor-not-allowed bg-gray-800'
 						: 'bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white'
 				}`}
 				title={`${title} ${shortcut ? `(${shortcut})` : ''}`}
 			>
-				{icon}
+				{loading ? (
+					<div className='w-5 h-5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin'></div>
+				) : (
+					icon
+				)}
 				<span className='absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none'>
 					{title}{' '}
 					{shortcut && <span className='text-gray-400 ml-1'>{shortcut}</span>}
@@ -97,7 +115,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 	return (
 		<>
 			{/* Main toolbar */}
-			<div className='fixed top-2 left-1/2 transform -translate-x-1/2 z-50'>
+			<div className='fixed top-6 left-1/2 transform -translate-x-1/2 z-50'>
 				<div className='flex items-center space-x-2 bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-700/50 p-2'>
 					<ToolbarButton
 						onClick={onPipelineToggle}
@@ -148,6 +166,63 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 
 					<div className='h-6 w-px bg-gray-700' />
 
+					{/* Кнопки для фильтрации оборудования */}
+					<ToolbarButton
+						onClick={() => setFilterMode('overdue')}
+						title={
+							filterMode === 'overdue'
+								? 'Сбросить просроченные'
+								: 'Показать просроченные'
+						}
+						icon={
+							<svg
+								className='w-5 h-5'
+								fill='none'
+								stroke='currentColor'
+								viewBox='0 0 24 24'
+							>
+								<path
+									strokeLinecap='round'
+									strokeLinejoin='round'
+									strokeWidth={2}
+									d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+								/>
+							</svg>
+						}
+						active={filterMode === 'overdue'}
+						loading={isLoading && filterMode === 'overdue'}
+						shortcut='Ctrl+O'
+					/>
+
+					<ToolbarButton
+						onClick={() => setFilterMode('defective')}
+						title={
+							filterMode === 'defective'
+								? 'Сбросить дефектные'
+								: 'Показать дефектные'
+						}
+						icon={
+							<svg
+								className='w-5 h-5'
+								fill='none'
+								stroke='currentColor'
+								viewBox='0 0 24 24'
+							>
+								<path
+									strokeLinecap='round'
+									strokeLinejoin='round'
+									strokeWidth={2}
+									d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.346 16.5c-.77.833.192 2.5 1.732 2.5z'
+								/>
+							</svg>
+						}
+						active={filterMode === 'defective'}
+						loading={isLoading && filterMode === 'defective'}
+						shortcut='Ctrl+D'
+					/>
+
+					<div className='h-6 w-px bg-gray-700' />
+
 					<ToolbarButton
 						onClick={onResetCamera}
 						title='Сбросить камеру'
@@ -173,7 +248,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 
 			{/* Table button - скрываем при открытой таблице */}
 			{!isTableOpen && (
-				<div className='fixed top-4 right-6 z-50'>
+				<div className='fixed top-6 right-6 z-50'>
 					<ToolbarButton
 						onClick={onOpenTable}
 						title='Открыть таблицу данных'

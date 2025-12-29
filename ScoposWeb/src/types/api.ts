@@ -31,3 +31,10 @@ export interface EquipmentDetails extends EquipmentItem {
 	userStat: string
 	systemStat: string
 }
+
+// Добавить в существующий файл
+export interface EquipmentSimple {
+	modelCode: string
+}
+
+export type EquipmentModelCode = string
