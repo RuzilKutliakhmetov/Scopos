@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { useEquipmentFilter } from '../../context/EquipmentFilterContext'
 import { emitCustomEvent, useCustomEvent } from '../../hooks/useCustomEvent'
 import type { EquipmentDetails, EquipmentItem } from '../../types/api'
 import EquipmentDetailsView from './EquipmentDetailsView'
@@ -26,6 +27,20 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 	const searchFilterRef = useRef<string>('')
 	const sortStateRef = useRef<any>(null)
 	const paginationStateRef = useRef<any>({ pageIndex: 0, pageSize: 20 })
+
+	// Используем контекст фильтров
+	const { filterMode } = useEquipmentFilter()
+
+	// Реакция на изменение фильтра
+	useEffect(() => {
+		if (isOpen && filterMode) {
+			console.log(
+				`🗑️ Фильтр изменен: сбрасываем выделение и возвращаемся к списку`
+			)
+			// Сбрасываем выделение при изменении фильтра
+			setSelectedEquipment(null)
+		}
+	}, [filterMode, isOpen])
 
 	// Загружаем данные при открытии таблицы
 	useEffect(() => {
@@ -141,12 +156,20 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 			className={`fixed top-0 right-0 h-full w-full max-w-xl z-40 transform transition-all duration-300 ease-in-out ${
 				isOpen ? 'translate-x-0' : 'translate-x-full'
 			}`}
-			style={{ zIndex: 40 }} // Уменьшен z-index, чтобы Toolbar был выше
+			style={{ zIndex: 40 }}
 		>
 			<div className='h-full bg-gray-900/95 border-l border-gray-700/50 shadow-2xl flex flex-col overflow-hidden'>
 				<TableHeader
 					title={selectedEquipment ? selectedEquipment.name : 'Таблица данных'}
-					subtitle={selectedEquipment ? 'Детальная информация' : ''}
+					subtitle={
+						filterMode
+							? `Фильтр: ${
+									filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'
+							  }`
+							: selectedEquipment
+							? 'Детальная информация'
+							: ''
+					}
 					onClose={handleClose}
 				/>
 

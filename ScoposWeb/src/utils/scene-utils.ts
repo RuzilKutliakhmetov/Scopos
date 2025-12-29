@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 import { LAYERS } from '../config/layers'
 
+import type { EquipmentFilterMode } from '../context/EquipmentFilterContext'
+import { emitCustomEvent } from '../hooks/useCustomEvent'
+
 export const assignLayers = (object: THREE.Object3D, isBackground = false) => {
 	const name = object.name || ''
 	const isBg = isBackground || name.includes('*')
@@ -172,4 +175,32 @@ export const getObjectCenter = (object: THREE.Object3D): THREE.Vector3 => {
 	const center = new THREE.Vector3()
 	box.getCenter(center)
 	return center
+}
+
+export const resetAllSelections = () => {
+	console.log('🔄 Сброс всех выделений и состояний')
+
+	// 1. Сбрасываем выделение в 3D сцене
+	emitCustomEvent('clear-selections')
+
+	// 2. Сбрасываем камеру
+	emitCustomEvent('reset-camera')
+
+	// 3. Можно добавить сброс других состояний если нужно
+}
+
+export const handleFilterChange = (
+	newFilterMode: EquipmentFilterMode | null,
+	setSelectedEquipmentCode: (code: string | undefined) => void
+) => {
+	console.log(`🔄 Обработка изменения фильтра: ${newFilterMode}`)
+
+	// 1. Сбрасываем выделение
+	resetAllSelections()
+
+	// 2. Сбрасываем выбранное оборудование
+	setSelectedEquipmentCode(undefined)
+
+	// 3. Возвращаемся к основному виду
+	// (если был открыт детальный просмотр - вернемся к таблице)
 }

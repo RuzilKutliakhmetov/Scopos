@@ -24,12 +24,19 @@ import {
 } from './components/Three'
 
 import { DataTableProvider } from './context/DataTableContext'
-import { EquipmentFilterProvider } from './context/EquipmentFilterContext'
+import {
+	EquipmentFilterProvider,
+	type EquipmentFilterMode,
+} from './context/EquipmentFilterContext'
 import { SelectionProvider } from './context/SelectionContext'
 import { emitCustomEvent, useCustomEvent } from './hooks/useCustomEvent'
 import { useViewerConfig } from './hooks/useViewerConfig'
 import { ErrorBoundary } from './utils/error-boundary'
-import { assignLayers, exportPipelineObjects } from './utils/scene-utils'
+import {
+	assignLayers,
+	exportPipelineObjects,
+	handleFilterChange,
+} from './utils/scene-utils'
 
 // Ленивая загрузка тяжелых компонентов
 const Toolbar = lazy(() => import('./components/Toolbar'))
@@ -52,12 +59,31 @@ function App() {
 
 	const config = useViewerConfig()
 
+	// Обработчик изменения фильтра
+	// const handleFilterChange = useCallback((mode: EquipmentFilterMode) => {
+	// 	console.log(`🔄 Фильтр изменен: ${mode}`)
+
+	// 	// 1. Сбрасываем выделение с объектов
+	// 	window.dispatchEvent(new Event('clear-selections'))
+
+	// 	// 2. Закрываем окно с деталями оборудования
+	// 	setSelectedEquipmentCode(undefined)
+
+	// 	// 3. Если таблица открыта с деталями - возвращаемся к списку
+	// 	// (выполнится автоматически через setSelectedEquipmentCode)
+	// }, [])
+
+	const handleFilterChangeWrapper = useCallback((mode: EquipmentFilterMode) => {
+		handleFilterChange(mode, setSelectedEquipmentCode)
+	}, [])
+
 	// Мемоизированные обработчики
 	const handlePipelineToggle = useCallback(() => {
 		const newMode = !isPipelineMode
 		setIsPipelineMode(newMode)
 		if (newMode) {
 			window.dispatchEvent(new Event('clear-selections'))
+			setSelectedEquipmentCode(undefined)
 		}
 	}, [isPipelineMode])
 
@@ -212,7 +238,7 @@ function App() {
 	return (
 		<SelectionProvider>
 			<DataTableProvider>
-				<EquipmentFilterProvider>
+				<EquipmentFilterProvider onFilterChange={handleFilterChangeWrapper}>
 					<div
 						className='w-screen h-screen overflow-hidden relative'
 						style={{ backgroundColor: config.ui.backgroundColor }}
@@ -226,7 +252,7 @@ function App() {
 								onOpenTable={handleOpenTable}
 								isPipelineMode={isPipelineMode}
 								showBackground={showBackground}
-								isTableOpen={showTable} // Передаем состояние таблицы
+								isTableOpen={showTable}
 							/>
 						</Suspense>
 

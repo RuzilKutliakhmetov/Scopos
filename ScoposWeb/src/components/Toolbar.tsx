@@ -78,6 +78,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 			disabled = false,
 			shortcut,
 			loading = false,
+			badgeCount = 0,
 		}: {
 			onClick: () => void
 			title: string
@@ -86,6 +87,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 			disabled?: boolean
 			shortcut?: string
 			loading?: boolean
+			badgeCount?: number
 		}) => (
 			<button
 				onClick={onClick}
@@ -102,7 +104,14 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 				{loading ? (
 					<div className='w-5 h-5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin'></div>
 				) : (
-					icon
+					<>
+						{icon}
+						{badgeCount > 0 && (
+							<span className='absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center'>
+								{badgeCount}
+							</span>
+						)}
+					</>
 				)}
 				<span className='absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none'>
 					{title}{' '}

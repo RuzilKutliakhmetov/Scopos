@@ -15,6 +15,8 @@ interface EquipmentFilterContextType {
 	error: string | null
 	setFilterMode: (mode: EquipmentFilterMode) => Promise<void>
 	clearFilter: () => void
+	// Добавляем коллбэки для уведомления о смене фильтра
+	onFilterChange?: (mode: EquipmentFilterMode) => void
 }
 
 const EquipmentFilterContext = createContext<
@@ -23,7 +25,8 @@ const EquipmentFilterContext = createContext<
 
 export const EquipmentFilterProvider: React.FC<{
 	children: React.ReactNode
-}> = ({ children }) => {
+	onFilterChange?: (mode: EquipmentFilterMode) => void
+}> = ({ children, onFilterChange }) => {
 	const [filterMode, setFilterModeState] = useState<EquipmentFilterMode>(null)
 	const [filterCodes, setFilterCodes] = useState<Set<string>>(new Set())
 	const [isLoading, setIsLoading] = useState(false)
@@ -36,6 +39,11 @@ export const EquipmentFilterProvider: React.FC<{
 				setFilterModeState(null)
 				setFilterCodes(new Set())
 				setError(null)
+
+				// Уведомляем о сбросе фильтра
+				if (onFilterChange) {
+					onFilterChange(null)
+				}
 				return
 			}
 
@@ -54,23 +62,38 @@ export const EquipmentFilterProvider: React.FC<{
 				}
 				setFilterCodes(new Set(codes))
 				console.log(`✅ Загружены коды для режима ${mode}:`, codes)
+
+				// Уведомляем о применении фильтра
+				if (onFilterChange) {
+					onFilterChange(mode)
+				}
 			} catch (err) {
 				setError(`Не удалось загрузить данные для режима ${mode}`)
 				console.error(`Error loading ${mode} equipment:`, err)
 				setFilterModeState(null)
 				setFilterCodes(new Set())
+
+				// Уведомляем об ошибке
+				if (onFilterChange) {
+					onFilterChange(null)
+				}
 			} finally {
 				setIsLoading(false)
 			}
 		},
-		[filterMode]
+		[filterMode, onFilterChange]
 	)
 
 	const clearFilter = useCallback(() => {
 		setFilterModeState(null)
 		setFilterCodes(new Set())
 		setError(null)
-	}, [])
+
+		// Уведомляем о сбросе фильтра
+		if (onFilterChange) {
+			onFilterChange(null)
+		}
+	}, [onFilterChange])
 
 	const contextValue = useMemo(
 		() => ({
