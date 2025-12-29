@@ -182,11 +182,6 @@ export const resetAllSelections = () => {
 
 	// 1. Сбрасываем выделение в 3D сцене
 	emitCustomEvent('clear-selections')
-
-	// 2. Сбрасываем камеру
-	emitCustomEvent('reset-camera')
-
-	// 3. Можно добавить сброс других состояний если нужно
 }
 
 export const handleFilterChange = (

@@ -17,6 +17,7 @@ import React, {
 	useRef,
 	useState,
 } from 'react'
+import { useEquipmentFilter } from '../../context/EquipmentFilterContext'
 import { emitCustomEvent } from '../../hooks/useCustomEvent'
 import type { EquipmentItem } from '../../types/api'
 
@@ -49,6 +50,9 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const [globalFilter, setGlobalFilter] = useState(savedState.search || '')
 	const tableContainerRef = useRef<HTMLDivElement>(null)
+
+	// Используем контекст фильтров
+	const { filterMode, filterCodes } = useEquipmentFilter()
 
 	// Локальное состояние для отслеживания изменений
 	const isInitialized = useRef(false)
@@ -115,9 +119,24 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 		[]
 	)
 
+	// Фильтруем оборудование в зависимости от активного фильтра
+	const filteredEquipmentList = useMemo(() => {
+		if (!filterMode || filterCodes.size === 0) {
+			return equipmentList
+		}
+
+		console.log(`🔍 Фильтрация таблицы: ${filterCodes.size} кодов`)
+
+		return equipmentList.filter(item => {
+			const modelCode = item.modelCode || item.code
+			// Проверяем по modelCode или code
+			return filterCodes.has(modelCode)
+		})
+	}, [equipmentList, filterMode, filterCodes])
+
 	// Создаем таблицу с помощью Tanstack Table
 	const table = useReactTable({
-		data: equipmentList,
+		data: filteredEquipmentList,
 		columns,
 		state: {
 			sorting,
@@ -260,12 +279,23 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 		}) => {
 			const cells = row.getVisibleCells()
 
+			// Проверяем, относится ли оборудование к фильтру
+			const item = row.original as EquipmentItem
+			const isInFilter =
+				filterMode && filterCodes.has(item.modelCode || item.code)
+
 			return (
 				<div
-					className='hover:bg-gray-800/30 transition-colors cursor-pointer absolute w-full flex border-b border-gray-800/50'
+					className={`hover:bg-gray-800/30 transition-colors cursor-pointer absolute w-full flex border-b border-gray-800/50 ${
+						isInFilter ? 'border-l-4' : ''
+					}`}
 					style={{
 						height: `${virtualRow.size}px`,
 						transform: `translateY(${virtualRow.start}px)`,
+						borderLeftColor:
+							filterMode === 'overdue'
+								? '#ef4444' // red-500
+								: '#f97316', // orange-500
 					}}
 					onClick={onClick}
 				>
@@ -385,6 +415,43 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 				</div>
 			)}
 
+			{/* Индикатор активного фильтра */}
+			{filterMode && (
+				<div className='mx-4 mt-4 mb-2'>
+					<div
+						className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+							filterMode === 'overdue'
+								? 'bg-red-500/20 text-red-300 border border-red-500/30'
+								: 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+						}`}
+					>
+						<svg
+							className={`w-3 h-3 mr-1 ${
+								filterMode === 'overdue' ? 'text-red-400' : 'text-orange-400'
+							}`}
+							fill='none'
+							stroke='currentColor'
+							viewBox='0 0 24 24'
+						>
+							<path
+								strokeLinecap='round'
+								strokeLinejoin='round'
+								strokeWidth={2}
+								d={
+									filterMode === 'overdue'
+										? 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+										: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.346 16.5c-.77.833.192 2.5 1.732 2.5z'
+								}
+							/>
+						</svg>
+						{filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'}
+						<span className='ml-1 text-gray-400'>
+							({filterCodes.size} объектов)
+						</span>
+					</div>
+				</div>
+			)}
+
 			{/* Таблица с виртуализацией */}
 			<div
 				ref={tableContainerRef}
@@ -445,7 +512,7 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 				)}
 
 				{/* Сообщение при отсутствии данных */}
-				{!loading && equipmentList.length === 0 && (
+				{!loading && filteredEquipmentList.length === 0 && (
 					<div className='flex flex-col items-center justify-center py-12 absolute inset-0'>
 						<svg
 							className='w-12 h-12 text-gray-600 mb-4'
@@ -461,7 +528,11 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 							/>
 						</svg>
 						<p className='text-gray-400 cursor-default'>
-							Нет данных для отображения
+							{filterMode
+								? `Нет оборудования с типом "${
+										filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'
+								  }"`
+								: 'Нет данных для отображения'}
 						</p>
 					</div>
 				)}
@@ -471,6 +542,10 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 			<div className='p-4 border-t border-gray-700/50 flex items-center justify-between'>
 				<div className='text-sm text-gray-400 cursor-default'>
 					{total > 0 ? `${start}-${end} из ${total}` : 'Нет данных'}
+					{filterMode &&
+						` • Фильтр: ${
+							filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'
+						}`}
 				</div>
 
 				{pageCount > 1 && (

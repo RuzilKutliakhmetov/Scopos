@@ -161,15 +161,7 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 			<div className='h-full bg-gray-900/95 border-l border-gray-700/50 shadow-2xl flex flex-col overflow-hidden'>
 				<TableHeader
 					title={selectedEquipment ? selectedEquipment.name : 'Таблица данных'}
-					subtitle={
-						filterMode
-							? `Фильтр: ${
-									filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'
-							  }`
-							: selectedEquipment
-							? 'Детальная информация'
-							: ''
-					}
+					subtitle={selectedEquipment ? 'Детальная информация' : ''}
 					onClose={handleClose}
 				/>
 

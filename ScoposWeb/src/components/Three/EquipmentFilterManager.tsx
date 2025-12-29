@@ -13,8 +13,18 @@ const EquipmentFilterManager: React.FC = () => {
 		return createSmartObjectFinder(scene)
 	}, [scene])
 
-	// Материал для полупрозрачных объектов
-	const transparentMaterial = useMemo(() => {
+	// Материал для выделенных объектов
+	const highlightMaterial = useMemo(() => {
+		return new THREE.MeshBasicMaterial({
+			color: filterMode === 'overdue' ? 0xff0000 : 0xffa500, // Красный для просроченных, оранжевый для дефектных
+			transparent: true,
+			opacity: 0.7,
+			depthWrite: true,
+		})
+	}, [filterMode])
+
+	// Материал для невыделенных объектов
+	const dimmedMaterial = useMemo(() => {
 		return new THREE.MeshBasicMaterial({
 			color: 0x888888,
 			transparent: true,
@@ -22,15 +32,6 @@ const EquipmentFilterManager: React.FC = () => {
 			depthWrite: true,
 		})
 	}, [])
-
-	// // Материал для обычных объектов
-	// const normalMaterial = useMemo(() => {
-	// 	return new THREE.MeshStandardMaterial({
-	// 		color: 0xffffff,
-	// 		metalness: 0.5,
-	// 		roughness: 0.5,
-	// 	})
-	// }, [])
 
 	// Карта для хранения оригинальных материалов
 	const originalMaterials = useMemo(() => {
@@ -64,42 +65,48 @@ const EquipmentFilterManager: React.FC = () => {
 		})
 		originalMaterials.clear()
 
+		// Подсчет найденных объектов
+		let highlightedCount = 0
+		let dimmedCount = 0
+
 		// Проходим по всем объектам сцены
 		scene.traverse((object: THREE.Object3D) => {
 			if (!object.name || !(object instanceof THREE.Mesh)) {
 				return
 			}
 
-			// Проверяем, соответствует ли объект фильтру
+			const mesh = object as THREE.Mesh
 			let shouldHighlight = false
 
+			// Проверяем, соответствует ли объект фильтру
 			for (const code of filterCodes) {
 				const foundObject = smartFindObject(code)
-				if (foundObject && foundObject.uuid === object.uuid) {
+				if (foundObject && foundObject.uuid === mesh.uuid) {
 					shouldHighlight = true
 					break
 				}
 			}
 
-			const mesh = object as THREE.Mesh
-
 			if (shouldHighlight) {
-				// Объект соответствует фильтру - оставляем нормальным
+				// Объект соответствует фильтру - выделяем цветом
 				if (!originalMaterials.has(mesh.uuid)) {
 					originalMaterials.set(mesh.uuid, mesh.material)
 				}
-				// Можно добавить подсветку, если нужно
-				// mesh.material = highlightMaterial
+				mesh.material = highlightMaterial
+				highlightedCount++
 			} else {
-				// Объект не соответствует фильтру - делаем полупрозрачным
+				// Объект не соответствует фильтру - затемняем
 				if (!originalMaterials.has(mesh.uuid)) {
 					originalMaterials.set(mesh.uuid, mesh.material)
 				}
-				mesh.material = transparentMaterial
+				mesh.material = dimmedMaterial
+				dimmedCount++
 			}
 		})
 
-		console.log(`✅ Применен фильтр к ${originalMaterials.size} объектам`)
+		console.log(
+			`✅ Применен фильтр: ${highlightedCount} выделено, ${dimmedCount} затемнено`
+		)
 
 		// Очистка при размонтировании
 		return () => {
@@ -116,7 +123,8 @@ const EquipmentFilterManager: React.FC = () => {
 		filterCodes,
 		scene,
 		smartFindObject,
-		transparentMaterial,
+		highlightMaterial,
+		dimmedMaterial,
 		originalMaterials,
 	])
 

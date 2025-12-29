@@ -20,7 +20,8 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 	showBackground,
 	isTableOpen = false,
 }) => {
-	const { filterMode, isLoading, setFilterMode } = useEquipmentFilter()
+	const { filterMode, filterCodes, isLoading, setFilterMode } =
+		useEquipmentFilter()
 
 	useEffect(() => {
 		const handleKeyPress = (e: KeyboardEvent) => {
@@ -79,6 +80,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 			shortcut,
 			loading = false,
 			badgeCount = 0,
+			isFilterButton = false,
 		}: {
 			onClick: () => void
 			title: string
@@ -88,37 +90,57 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 			shortcut?: string
 			loading?: boolean
 			badgeCount?: number
-		}) => (
-			<button
-				onClick={onClick}
-				disabled={disabled || loading}
-				className={`p-3 rounded-lg transition-all duration-200 group relative cursor-pointer ${
-					active
-						? 'bg-blue-600 text-white'
-						: disabled || loading
-						? 'opacity-50 cursor-not-allowed bg-gray-800'
-						: 'bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white'
-				}`}
-				title={`${title} ${shortcut ? `(${shortcut})` : ''}`}
-			>
-				{loading ? (
-					<div className='w-5 h-5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin'></div>
-				) : (
-					<>
-						{icon}
-						{badgeCount > 0 && (
-							<span className='absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center'>
-								{badgeCount}
-							</span>
-						)}
-					</>
-				)}
-				<span className='absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none'>
-					{title}{' '}
-					{shortcut && <span className='text-gray-400 ml-1'>{shortcut}</span>}
-				</span>
-			</button>
-		)
+			isFilterButton?: boolean
+		}) => {
+			// Определяем цвет активной кнопки
+			const getActiveColorClass = () => {
+				if (isFilterButton && filterMode) {
+					return filterMode === 'overdue'
+						? 'bg-red-600/80 text-white'
+						: 'bg-orange-600/80 text-white'
+				}
+				// Синий цвет для обычных активных кнопок
+				return 'bg-blue-600 text-white'
+			}
+
+			return (
+				<button
+					onClick={onClick}
+					disabled={disabled || loading}
+					className={`p-3 rounded-lg transition-all duration-200 group relative cursor-pointer ${
+						active
+							? getActiveColorClass()
+							: disabled || loading
+							? 'opacity-50 cursor-not-allowed bg-gray-800'
+							: 'bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white'
+					}`}
+					title={`${title} ${shortcut ? `(${shortcut})` : ''}`}
+				>
+					{loading ? (
+						<div className='w-5 h-5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin'></div>
+					) : (
+						<>
+							{icon}
+							{badgeCount > 0 && (
+								<span
+									className={`absolute -top-1 -right-1 text-xs rounded-full w-5 h-5 flex items-center justify-center ${
+										filterMode === 'overdue'
+											? 'bg-red-500 text-white'
+											: 'bg-orange-500 text-white'
+									}`}
+								>
+									{badgeCount > 99 ? '99+' : badgeCount}
+								</span>
+							)}
+						</>
+					)}
+					<span className='absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none'>
+						{title}{' '}
+						{shortcut && <span className='text-gray-400 ml-1'>{shortcut}</span>}
+					</span>
+				</button>
+			)
+		}
 	)
 
 	return (
@@ -181,7 +203,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 						title={
 							filterMode === 'overdue'
 								? 'Сбросить просроченные'
-								: 'Показать просроченные'
+								: `Показать просроченные (${filterCodes.size})`
 						}
 						icon={
 							<svg
@@ -200,7 +222,9 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 						}
 						active={filterMode === 'overdue'}
 						loading={isLoading && filterMode === 'overdue'}
+						badgeCount={filterMode === 'overdue' ? filterCodes.size : 0}
 						shortcut='Ctrl+O'
+						isFilterButton={true}
 					/>
 
 					<ToolbarButton
@@ -208,7 +232,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 						title={
 							filterMode === 'defective'
 								? 'Сбросить дефектные'
-								: 'Показать дефектные'
+								: `Показать дефектные (${filterCodes.size})`
 						}
 						icon={
 							<svg
@@ -227,7 +251,9 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 						}
 						active={filterMode === 'defective'}
 						loading={isLoading && filterMode === 'defective'}
+						badgeCount={filterMode === 'defective' ? filterCodes.size : 0}
 						shortcut='Ctrl+D'
+						isFilterButton={true}
 					/>
 
 					<div className='h-6 w-px bg-gray-700' />
