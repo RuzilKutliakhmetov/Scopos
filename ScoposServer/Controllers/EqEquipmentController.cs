@@ -44,6 +44,27 @@ public class EqEquipmentController : ControllerBase
         return Ok(_mapper.Map<EqEquipmentPassportDto>(entity));
     }
 
+    /// <summary>
+    /// Получить ModelCode с просроченной ЕПБ (базовый запрос как в SQL)
+    /// </summary>
+    [HttpGet("overdue-simple")]
+    public async Task<ActionResult<IEnumerable<string>>> GetOverdueModelCodesSimple()
+    {
+        try
+        {
+            var modelCodes = await _context.EqEquipments
+                .Where(x => x.ModelCode != null && x.EpbNextDate < DateTime.UtcNow)
+                .Select(x => x.ModelCode!)
+                .ToListAsync();
+
+            return Ok(modelCodes);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Внутренняя ошибка сервера  {ex.ToString()}");
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateEqEquipmentDto dto)
     {

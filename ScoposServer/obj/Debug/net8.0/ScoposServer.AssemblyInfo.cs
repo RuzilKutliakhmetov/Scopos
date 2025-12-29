@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ScoposServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1ba87f357057e31aef5299be0332e471455b93e1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2351a4173d76142e722b58fff4eea9cf0b61003c")]
 [assembly: System.Reflection.AssemblyProductAttribute("ScoposServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ScoposServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

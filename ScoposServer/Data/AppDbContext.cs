@@ -5,6 +5,7 @@ namespace ScoposServer.Data;
 public class AppDbContext : DbContext
 {
     public DbSet<EqEquipment> EqEquipments => Set<EqEquipment>();
+    public DbSet<EqNotify> EqNotifies => Set<EqNotify>();
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -19,5 +20,8 @@ public class AppDbContext : DbContext
         // глобальный фильтр: не отдаём удалённые
         modelBuilder.Entity<EqEquipment>()
             .HasQueryFilter(x => !x.IsDel);
+
+        modelBuilder.Entity<EqNotify>()
+            .HasKey(x => x.QmCode);
     }
 }

@@ -111,6 +111,44 @@
         }
       }
     },
+    "/api/equipment/overdue-simple": {
+      "get": {
+        "tags": [
+          "EqEquipment"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/equipment/by-model/{modelCode}": {
       "get": {
         "tags": [
@@ -143,6 +181,313 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EqEquipmentPassportDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notify/equipment/modelcodes": {
+      "get": {
+        "tags": [
+          "EqNotify"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notify/equipment/short": {
+      "get": {
+        "tags": [
+          "EqNotify"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EquipmentWithNotifyShortDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EquipmentWithNotifyShortDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EquipmentWithNotifyShortDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notify/equipment/model/{modelCode}": {
+      "get": {
+        "tags": [
+          "EqNotify"
+        ],
+        "parameters": [
+          {
+            "name": "modelCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentWithNotifyDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentWithNotifyDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentWithNotifyDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notify/by-equipment/{eoCode}": {
+      "get": {
+        "tags": [
+          "EqNotify"
+        ],
+        "parameters": [
+          {
+            "name": "eoCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EqNotifyDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EqNotifyDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EqNotifyDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notify/stats": {
+      "get": {
+        "tags": [
+          "EqNotify"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/notify/filtered": {
+      "get": {
+        "tags": [
+          "EqNotify"
+        ],
+        "parameters": [
+          {
+            "name": "eoCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "criticality",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "qmType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EqNotifyDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EqNotifyDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EqNotifyDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notify": {
+      "post": {
+        "tags": [
+          "EqNotify"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEqNotifyDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEqNotifyDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEqNotifyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EqNotifyDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EqNotifyDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EqNotifyDto"
                 }
               }
             }
@@ -233,6 +578,94 @@
             "nullable": true
           },
           "location": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateEqNotifyDto": {
+        "required": [
+          "eoCode",
+          "feCode",
+          "qmCode"
+        ],
+        "type": "object",
+        "properties": {
+          "qmCode": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "feCode": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "eoCode": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "qmType": {
+            "type": "string",
+            "nullable": true
+          },
+          "qmGrpCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "qmGrpName": {
+            "type": "string",
+            "nullable": true
+          },
+          "qmCodCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "qmCodName": {
+            "type": "string",
+            "nullable": true
+          },
+          "organization": {
+            "type": "string",
+            "nullable": true
+          },
+          "feGrpCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "feGrpName": {
+            "type": "string",
+            "nullable": true
+          },
+          "feCodCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "feCodName": {
+            "type": "string",
+            "nullable": true
+          },
+          "feName": {
+            "type": "string",
+            "nullable": true
+          },
+          "criticality": {
+            "type": "string",
+            "nullable": true
+          },
+          "eliminationStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "eliminationDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "repairStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderInfo": {
             "type": "string",
             "nullable": true
           }
@@ -351,6 +784,150 @@
           },
           "location": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EqNotifyDto": {
+        "type": "object",
+        "properties": {
+          "qmCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "feCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "eoCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "qmType": {
+            "type": "string",
+            "nullable": true
+          },
+          "qmGrpName": {
+            "type": "string",
+            "nullable": true
+          },
+          "qmCodName": {
+            "type": "string",
+            "nullable": true
+          },
+          "organization": {
+            "type": "string",
+            "nullable": true
+          },
+          "feName": {
+            "type": "string",
+            "nullable": true
+          },
+          "criticality": {
+            "type": "string",
+            "nullable": true
+          },
+          "eliminationStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "eliminationDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "repairStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderInfo": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EquipmentWithNotifyDto": {
+        "type": "object",
+        "properties": {
+          "modelCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "equipmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "equipmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "notifyCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notifies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EqNotifyDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EquipmentWithNotifyShortDto": {
+        "type": "object",
+        "properties": {
+          "modelCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "equipmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "equipmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "className": {
+            "type": "string",
+            "nullable": true
+          },
+          "manufacturer": {
+            "type": "string",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "notifyCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "criticalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastNotifyDate": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           }
         },
