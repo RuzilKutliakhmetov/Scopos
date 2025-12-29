@@ -9,7 +9,14 @@ import {
 	type SortingState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react'
+import React, {
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
 import { emitCustomEvent } from '../../hooks/useCustomEvent'
 import type { EquipmentItem } from '../../types/api'
 
@@ -18,7 +25,12 @@ interface UnifiedTableViewProps {
 	loading: boolean
 	error: string | null
 	onSelectEquipment: (modelCode: string) => void
-	onRefresh: () => void
+	onSaveState?: (search: string, sort: any, pagination: any) => void
+	savedState?: {
+		search: string
+		sort: any
+		pagination: any
+	}
 }
 
 const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
@@ -26,11 +38,20 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 	loading,
 	error,
 	onSelectEquipment,
+	onSaveState,
+	savedState = {
+		search: '',
+		sort: null,
+		pagination: { pageIndex: 0, pageSize: 20 },
+	},
 }) => {
-	const [sorting, setSorting] = useState<SortingState>([])
+	const [sorting, setSorting] = useState<SortingState>(savedState.sort || [])
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-	const [globalFilter, setGlobalFilter] = useState('')
+	const [globalFilter, setGlobalFilter] = useState(savedState.search || '')
 	const tableContainerRef = useRef<HTMLDivElement>(null)
+
+	// Локальное состояние для отслеживания изменений
+	const isInitialized = useRef(false)
 
 	// Обработчик выбора оборудования
 	const handleSelectEquipment = useCallback(
@@ -53,7 +74,7 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 		[onSelectEquipment]
 	)
 
-	// Определяем колонки для таблицы (без "Производителя")
+	// Определяем колонки для таблицы
 	const columns = useMemo(
 		() => [
 			{
@@ -111,10 +132,7 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		initialState: {
-			pagination: {
-				pageSize: 20,
-				pageIndex: 0,
-			},
+			pagination: savedState.pagination || { pageSize: 20, pageIndex: 0 },
 		},
 	})
 
@@ -125,6 +143,33 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 	const pageIndex = table.getState().pagination.pageIndex
 	const pageCount = table.getPageCount()
 
+	// Сохраняем состояние при изменении
+	useEffect(() => {
+		if (isInitialized.current && onSaveState) {
+			const currentState = {
+				search: globalFilter,
+				sort: sorting,
+				pagination: { pageIndex, pageSize },
+			}
+			onSaveState(
+				currentState.search,
+				currentState.sort,
+				currentState.pagination
+			)
+		}
+		isInitialized.current = true
+	}, [globalFilter, sorting, pageIndex, pageSize, onSaveState])
+
+	// Восстанавливаем состояние при первом рендере
+	useEffect(() => {
+		if (savedState.search) {
+			setGlobalFilter(savedState.search)
+		}
+		if (savedState.sort) {
+			setSorting(savedState.sort)
+		}
+	}, [savedState])
+
 	// Виртуализация строк
 	const rowVirtualizer = useVirtualizer({
 		count: rows.length,
@@ -133,7 +178,7 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 		overscan: 5,
 	})
 
-	// Фиксированные размеры столбцов (обновленные)
+	// Фиксированные размеры столбцов
 	const columnWidths = {
 		code: 110,
 		name: 200,
@@ -286,26 +331,49 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 			<div className='p-4 border-b border-gray-700/50'>
 				<div className='flex items-center'>
 					<div className='relative flex-1'>
-						<input
-							type='text'
-							placeholder='Поиск по таблице...'
-							value={globalFilter ?? ''}
-							onChange={e => setGlobalFilter(e.target.value)}
-							className='w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-text'
-						/>
-						<svg
-							className='absolute left-3 top-2.5 w-4 h-4 text-gray-500'
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
+						<div className='relative'>
+							<input
+								type='text'
+								placeholder='Поиск по таблице...'
+								value={globalFilter ?? ''}
+								onChange={e => setGlobalFilter(e.target.value)}
+								className='w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-text'
 							/>
-						</svg>
+							<svg
+								className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500'
+								fill='none'
+								stroke='currentColor'
+								viewBox='0 0 24 24'
+							>
+								<path
+									strokeLinecap='round'
+									strokeLinejoin='round'
+									strokeWidth={2}
+									d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
+								/>
+							</svg>
+							{globalFilter && (
+								<button
+									onClick={() => setGlobalFilter('')}
+									className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white cursor-pointer'
+									title='Очистить поиск'
+								>
+									<svg
+										className='w-4 h-4'
+										fill='none'
+										stroke='currentColor'
+										viewBox='0 0 24 24'
+									>
+										<path
+											strokeLinecap='round'
+											strokeLinejoin='round'
+											strokeWidth={2}
+											d='M6 18L18 6M6 6l12 12'
+										/>
+									</svg>
+								</button>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -317,7 +385,7 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 				</div>
 			)}
 
-			{/* Таблица с виртуализацией и кастомным скроллбаром */}
+			{/* Таблица с виртуализацией */}
 			<div
 				ref={tableContainerRef}
 				className='flex-1 overflow-auto relative table-scrollbar'
@@ -452,7 +520,6 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 							onChange={e => {
 								const newSize = Number(e.target.value)
 								table.setPageSize(newSize)
-								// Сбрасываем на первую страницу при изменении размера
 								table.setPageIndex(0)
 							}}
 							className='px-3 py-1.5 rounded text-sm bg-gray-800 border border-gray-700 text-gray-300 focus:outline-none focus:border-blue-500 cursor-pointer'

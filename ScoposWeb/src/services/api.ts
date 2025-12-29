@@ -6,50 +6,43 @@ class ApiService {
 	private baseURL: string
 
 	constructor() {
-		// Определяем базовый URL в зависимости от окружения
 		this.baseURL = this.determineBaseURL()
 
 		this.api = axios.create({
 			baseURL: this.baseURL,
-			timeout: 30000, // Увеличиваем таймаут для продакшена
+			timeout: 30000,
 			headers: {
 				'Content-Type': 'application/json',
 				Accept: 'application/json',
 			},
-			withCredentials: true, // Важно для продакшена с куками/сессиями
+			withCredentials: true,
 		})
 
 		this.setupInterceptors()
 	}
 
 	private determineBaseURL(): string {
-		// 1. Проверяем env переменную
 		if (import.meta.env.VITE_API_URL) {
 			return import.meta.env.VITE_API_URL
 		}
 
-		// 2. Определяем по текущему хосту
 		const hostname = window.location.hostname
 		const port = window.location.port
 
-		// Для локальной разработки
 		if (hostname === 'localhost' || hostname === '127.0.0.1') {
 			return port === '3000' || port === '5173' || port === '8080'
-				? 'https://localhost:7218' // для Vite dev server
+				? 'https://localhost:7218'
 				: 'http://localhost:7218'
 		}
 
-		// Для продакшена (адаптируйте под ваш домен)
 		if (hostname.includes('gazprom.ru')) {
 			return 'http://srv-edms-scopos.ufa-tr.gazprom.ru'
 		}
 
-		// Fallback на localhost для разработки
 		return 'https://localhost:7218'
 	}
 
 	private setupInterceptors() {
-		// Логирование запросов
 		this.api.interceptors.request.use(
 			config => {
 				if (import.meta.env.DEV) {
@@ -65,7 +58,6 @@ class ApiService {
 			}
 		)
 
-		// Обработка ответов
 		this.api.interceptors.response.use(
 			response => {
 				if (import.meta.env.DEV) {
@@ -75,7 +67,6 @@ class ApiService {
 			},
 			error => {
 				if (error.response) {
-					// Сервер ответил с ошибкой
 					console.error('❌ API Error:', {
 						status: error.response.status,
 						statusText: error.response.statusText,
@@ -83,26 +74,20 @@ class ApiService {
 						data: error.response.data,
 					})
 
-					// Обработка 301 редиректа
 					if (error.response.status === 301 || error.response.status === 308) {
 						const redirectUrl = error.response.headers.location
 						console.warn(
 							`⚠️ Получен редирект ${error.response.status} на:`,
 							redirectUrl
 						)
-
-						// Можно автоматически повторить запрос на новый URL
-						// Но лучше показать сообщение пользователю
 						throw new Error(
 							`Сервер перенаправил запрос. Проверьте настройки API.`
 						)
 					}
 				} else if (error.request) {
-					// Запрос был сделан, но ответа нет
 					console.error('❌ Network Error:', error.message)
 					throw new Error('Проблемы с сетью. Проверьте подключение.')
 				} else {
-					// Ошибка настройки запроса
 					console.error('❌ Request Setup Error:', error.message)
 				}
 
@@ -111,64 +96,79 @@ class ApiService {
 		)
 	}
 
+	private async requestWithRetry<T>(
+		requestFn: () => Promise<T>,
+		maxRetries = 2
+	): Promise<T> {
+		for (let i = 0; i < maxRetries; i++) {
+			try {
+				return await requestFn()
+			} catch (error) {
+				if (i === maxRetries - 1) throw error
+				// Экспоненциальная задержка
+				await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+			}
+		}
+		throw new Error('Max retries exceeded')
+	}
+
 	// Получить все оборудование
 	async getAllEquipment(): Promise<EquipmentItem[]> {
-		try {
-			const response = await this.api.get<EquipmentItem[]>('/api/equipment')
-			return response.data
-		} catch (error: any) {
-			console.error('Error fetching all equipment:', error)
+		return this.requestWithRetry(async () => {
+			try {
+				const response = await this.api.get<EquipmentItem[]>('/api/equipment')
+				return response.data
+			} catch (error: any) {
+				console.error('Error fetching all equipment:', error)
 
-			// Проверяем, является ли это ошибкой CORS или 301
-			if (
-				error.message.includes('Network Error') ||
-				error.message.includes('CORS') ||
-				error.response?.status === 301
-			) {
-				console.warn(
-					'⚠️ Проблема с доступом к API. Используем тестовые данные.'
-				)
+				if (
+					error.message.includes('Network Error') ||
+					error.message.includes('CORS') ||
+					error.response?.status === 301
+				) {
+					console.warn(
+						'⚠️ Проблема с доступом к API. Используем тестовые данные.'
+					)
+					return this.getMockData()
+				}
 
-				// Возвращаем тестовые данные для продолжения работы
-				return this.getMockData()
+				throw error
 			}
-
-			throw error
-		}
+		})
 	}
 
 	// Получить информацию по коду
 	async getEquipmentByCode(modelCode: string): Promise<EquipmentDetails> {
-		try {
-			console.log(`🔍 Запрос оборудования по коду: ${modelCode}`)
+		return this.requestWithRetry(async () => {
+			try {
+				console.log(`🔍 Запрос оборудования по коду: ${modelCode}`)
 
-			// Кодируем код для URL
-			const encodedCode = encodeURIComponent(modelCode)
-			const response = await this.api.get<EquipmentDetails>(
-				`/api/equipment/${encodedCode}`
-			)
-
-			return response.data
-		} catch (error: any) {
-			console.error(`Error fetching equipment ${modelCode}:`, error)
-
-			// Проверяем тип ошибки
-			if (error.response?.status === 404) {
-				throw new Error(`Оборудование с кодом ${modelCode} не найдено`)
-			} else if (error.response?.status === 301) {
-				throw new Error(`Ошибка перенаправления при запросе ${modelCode}`)
-			} else if (
-				error.message.includes('Network Error') ||
-				error.message.includes('CORS')
-			) {
-				console.warn(
-					'⚠️ Проблема с доступом к API. Используем тестовые данные.'
+				const encodedCode = encodeURIComponent(modelCode)
+				const response = await this.api.get<EquipmentDetails>(
+					`/api/equipment/${encodedCode}`
 				)
-				return this.getMockDetails(modelCode)
-			}
 
-			throw error
-		}
+				return response.data
+			} catch (error: any) {
+				console.error(`Error fetching equipment ${modelCode}:`, error)
+
+				if (error.response?.status === 404) {
+					throw new Error(`Оборудование с кодом ${modelCode} не найдено`)
+				} else if (error.response?.status === 301) {
+					throw new Error(`Ошибка перенаправления при запросе ${modelCode}`)
+				} else if (
+					error.message.includes('Network Error') ||
+					error.message.includes('CORS')
+				) {
+					console.warn(
+						'⚠️ Проблема с доступом к API. Используем тестовые данные.'
+					)
+					return this.getMockDetails(modelCode)
+				}
+
+				throw error
+			}
+		})
 	}
 
 	// Тестовые данные

@@ -1,8 +1,9 @@
 import { useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { VIEWER_CONFIG } from '../../config/viewerConfig'
 import { useCustomEvent } from '../../hooks/useCustomEvent'
+import { createSmartObjectFinder } from '../../utils/scene-utils'
 
 interface FocusEventDetail {
 	objectName: string
@@ -28,54 +29,10 @@ const FocusController: React.FC = () => {
 		}
 	}, [])
 
-	// Поиск объекта в сцене
-	const findObjectInScene = useCallback(
-		(searchName: string): THREE.Object3D | null => {
-			console.log(`🔍 Поиск объекта: "${searchName}"`)
-
-			let foundObject: THREE.Object3D | null = null
-
-			// 1. Точное совпадение
-			scene.traverse((object: THREE.Object3D) => {
-				if (object.name && object.name === searchName) {
-					foundObject = object
-				}
-			})
-			if (foundObject) {
-				return foundObject
-			}
-			// 2. Частичное совпадение (поисковая строка содержится в имени объекта)
-			scene.traverse((object: THREE.Object3D) => {
-				if (object.name && object.name.includes(searchName)) {
-					foundObject = object
-					console.log(`✅ Найдено частичное совпадение: "${object.name}"`)
-				}
-			})
-
-			if (foundObject) return foundObject
-
-			// 3. Поиск по числам
-			const numbersInSearch = searchName.match(/\d+/g)
-			if (numbersInSearch) {
-				for (const number of numbersInSearch) {
-					scene.traverse((object: THREE.Object3D) => {
-						if (object.name && object.name.includes(number) && !foundObject) {
-							foundObject = object
-							console.log(`✅ Найдено по числу ${number}: ${object.name}`)
-						}
-					})
-					if (foundObject) break
-				}
-			}
-
-			if (!foundObject) {
-				console.log(`⚠️ Объект "${searchName}" не найден в сцене`)
-			}
-
-			return foundObject
-		},
-		[scene]
-	)
+	// Создаем умный поиск с кэшированием
+	const smartFindObject = useMemo(() => {
+		return createSmartObjectFinder(scene)
+	}, [scene])
 
 	// Плавная анимация камеры
 	const animateCamera = useCallback(
@@ -134,7 +91,7 @@ const FocusController: React.FC = () => {
 				return
 			}
 
-			const targetObject = findObjectInScene(objectName)
+			const targetObject = smartFindObject(objectName)
 
 			if (!targetObject) {
 				console.log(
@@ -197,7 +154,7 @@ const FocusController: React.FC = () => {
 				console.log('🎬 Начата плавная анимация фокусировки')
 			}
 		},
-		[camera, findObjectInScene, animateCamera]
+		[camera, smartFindObject, animateCamera]
 	)
 
 	// Подписка на события фокусировки

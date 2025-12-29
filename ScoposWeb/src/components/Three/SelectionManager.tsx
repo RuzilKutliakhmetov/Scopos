@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { VIEWER_CONFIG } from '../../config/viewerConfig'
 import { useSelection } from '../../context/SelectionContext'
 import { emitCustomEvent, useCustomEvent } from '../../hooks/useCustomEvent'
+import { createSmartObjectFinder } from '../../utils/scene-utils'
 
 const SelectionManager: React.FC = () => {
 	const { camera, gl, scene } = useThree()
@@ -34,9 +35,23 @@ const SelectionManager: React.FC = () => {
 		>()
 	)
 
-	// Мемоизированная функция для получения объекта под курсором
+	// Создаем умный поиск с кэшированием
+	const smartFindObject = useMemo(() => {
+		return createSmartObjectFinder(scene)
+	}, [scene])
+
+	// Мемоизированная функция для получения объекта под курсором с debounce
 	const getHitObject = useMemo(() => {
+		let lastCheckTime = 0
+		const CHECK_INTERVAL = 16 // ~60 FPS
+
 		return (event: MouseEvent): THREE.Object3D | null => {
+			const now = performance.now()
+			if (now - lastCheckTime < CHECK_INTERVAL) {
+				return null
+			}
+			lastCheckTime = now
+
 			const rect = gl.domElement.getBoundingClientRect()
 
 			mouse.current.set(
@@ -222,53 +237,13 @@ const SelectionManager: React.FC = () => {
 		},
 		[getHitObject, resetObjectColor, setObjectColor, setHovered, gl]
 	)
-	// Функция поиска объекта по имени
-	const findObjectByName = useCallback(
-		(objectName: string): THREE.Object3D | null => {
-			let foundObject: THREE.Object3D | null = null
-
-			// 1. Точное совпадение
-			scene.traverse((object: THREE.Object3D) => {
-				if (object.name === objectName) {
-					foundObject = object
-				}
-			})
-
-			if (foundObject) return foundObject
-
-			// 2. Частичное совпадение
-			scene.traverse((object: THREE.Object3D) => {
-				if (object.name && object.name.includes(objectName)) {
-					foundObject = object
-				}
-			})
-
-			if (foundObject) return foundObject
-
-			// 3. Поиск по числам
-			const numbersInSearch = objectName.match(/\d+/g)
-			if (numbersInSearch) {
-				for (const number of numbersInSearch) {
-					scene.traverse((object: THREE.Object3D) => {
-						if (object.name && object.name.includes(number) && !foundObject) {
-							foundObject = object
-						}
-					})
-					if (foundObject) break
-				}
-			}
-
-			return foundObject
-		},
-		[scene]
-	)
 
 	// Функция выделения объекта по имени
 	const selectObjectByName = useCallback(
 		(objectName: string) => {
 			console.log(`🎯 Выделение объекта по имени: ${objectName}`)
 
-			const foundObject = findObjectByName(objectName)
+			const foundObject = smartFindObject(objectName)
 
 			if (!foundObject) {
 				console.warn(`❌ Объект "${objectName}" не найден для выделения`)
@@ -295,7 +270,7 @@ const SelectionManager: React.FC = () => {
 			console.log(`✅ Объект выделен: ${foundObject.name}`)
 			return true
 		},
-		[findObjectByName, resetObjectColor, setObjectColor, select, deselect]
+		[smartFindObject, resetObjectColor, setObjectColor, select, deselect]
 	)
 
 	// Обработчик события выделения из таблицы
@@ -393,6 +368,7 @@ const SelectionManager: React.FC = () => {
 			setHovered,
 		]
 	)
+
 	const handleMouseDown = useCallback((event: MouseEvent) => {
 		startPos.current = { x: event.clientX, y: event.clientY }
 	}, [])

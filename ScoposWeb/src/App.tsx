@@ -14,9 +14,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import LoadingSpinner from './components/LoadingSpinner'
 import {
-	assignLayers,
 	CustomOrbitControls,
-	exportPipelineObjects,
 	FocusController,
 	LayerManager,
 	Lighting,
@@ -29,6 +27,7 @@ import { SelectionProvider } from './context/SelectionContext'
 import { emitCustomEvent, useCustomEvent } from './hooks/useCustomEvent'
 import { useViewerConfig } from './hooks/useViewerConfig'
 import { ErrorBoundary } from './utils/error-boundary'
+import { assignLayers, exportPipelineObjects } from './utils/scene-utils'
 
 // Ленивая загрузка тяжелых компонентов
 const Toolbar = lazy(() => import('./components/Toolbar'))
@@ -66,7 +65,14 @@ function App() {
 	}, [isPipelineMode, showBackground])
 
 	const handleResetCamera = useCallback(() => {
+		// Сбрасываем выбранное оборудование при сбросе камеры
+		setSelectedEquipmentCode(undefined)
+
+		// Отправляем событие сброса камеры
 		window.dispatchEvent(new CustomEvent('reset-camera'))
+
+		// Также очищаем все выделения
+		window.dispatchEvent(new Event('clear-selections'))
 	}, [])
 
 	const handleOpenTable = useCallback(() => {
@@ -85,6 +91,16 @@ function App() {
 		useCallback(detail => {
 			setSelectedEquipmentCode(detail.code)
 			setShowTable(true)
+		}, [])
+	)
+
+	// Слушаем события сброса камеры для скрытия деталей оборудования
+	useCustomEvent(
+		'reset-camera',
+		useCallback(() => {
+			// При сбросе камеры сбрасываем выбранное оборудование
+			setSelectedEquipmentCode(undefined)
+			console.log('📤 Сброс камеры: сброс выбранного оборудования')
 		}, [])
 	)
 
@@ -154,6 +170,7 @@ function App() {
 				loader.manager.itemStart = () => {}
 				loader.manager.itemEnd = () => {}
 				loader.manager.itemError = () => {}
+				loader = null
 			}
 		}
 	}, [config.model.path])
@@ -168,17 +185,6 @@ function App() {
 		}),
 		[config.camera]
 	)
-
-	// Мемоизированный fallback для Suspense
-	// const toolbarFallback = useMemo(
-	// 	() => <div className='fixed top-6 left-6 z-50'>Загрузка...</div>,
-	// 	[]
-	// )
-
-	// const tableFallback = useMemo(
-	// 	() => <LoadingSpinner progress={0} message='Загрузка таблицы...' />,
-	// 	[]
-	// )
 
 	if (loading) {
 		return <LoadingSpinner progress={loadProgress} />
@@ -208,11 +214,8 @@ function App() {
 					className='w-screen h-screen overflow-hidden relative'
 					style={{ backgroundColor: config.ui.backgroundColor }}
 				>
-					<Suspense
-						fallback={
-							<LoadingSpinner progress={0} message='Загрузка интерфейса...' />
-						}
-					>
+					{/* Toolbar рендерится всегда, независимо от состояния таблицы */}
+					<Suspense fallback={null}>
 						<ToolbarMemo
 							onResetCamera={handleResetCamera}
 							onPipelineToggle={handlePipelineToggle}
@@ -220,19 +223,17 @@ function App() {
 							onOpenTable={handleOpenTable}
 							isPipelineMode={isPipelineMode}
 							showBackground={showBackground}
+							isTableOpen={showTable} // Передаем состояние таблицы
 						/>
+					</Suspense>
 
-						<Suspense
-							fallback={
-								<LoadingSpinner progress={0} message='Загрузка таблицы...' />
-							}
-						>
-							<DataTableMemo
-								isOpen={showTable}
-								onClose={handleCloseTable}
-								selectedObjectCode={selectedEquipmentCode}
-							/>
-						</Suspense>
+					{/* DataTable с сохранением состояния фильтров */}
+					<Suspense fallback={null}>
+						<DataTableMemo
+							isOpen={showTable}
+							onClose={handleCloseTable}
+							selectedObjectCode={selectedEquipmentCode}
+						/>
 					</Suspense>
 
 					<ErrorBoundary>

@@ -3,6 +3,7 @@ import { VIEWER_CONFIG } from '../config/viewerConfig'
 
 export const useViewerConfig = () => {
 	return useMemo(() => {
+		// Загружать все настройки localStorage за один раз
 		const storedShowGrid = localStorage.getItem('viewer-show-grid')
 
 		return {

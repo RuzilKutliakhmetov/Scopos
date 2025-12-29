@@ -1,7 +1,6 @@
 export { default } from './DataTable'
 export { default as EquipmentDetailsView } from './EquipmentDetailsView'
-export { default as TableControls } from './TableControls'
+
 export { default as TableHeader } from './TableHeader'
-export { default as TablePagination } from './TablePagination'
-export { default as TableView } from './TableView'
+
 export { default as VirtualizedTable } from './VirtualizedTable'

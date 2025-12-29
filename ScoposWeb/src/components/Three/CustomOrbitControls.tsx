@@ -15,8 +15,6 @@ const CustomOrbitControls = (props: any) => {
 		if (controlsRef.current) {
 			console.log('🚀 OrbitControls инициализированы')
 			emitCustomEvent('controls-ready', { controls: controlsRef.current })
-
-			// Настраиваем базовую чувствительность
 			setupControlsSensitivity()
 		}
 	}, [controlsRef.current])
@@ -26,8 +24,6 @@ const CustomOrbitControls = (props: any) => {
 		if (!controlsRef.current) return
 
 		const controls = controlsRef.current
-
-		// Базовая скорость из конфига
 		controls.panSpeed = VIEWER_CONFIG.controls.panSpeed
 		controls.rotateSpeed = VIEWER_CONFIG.controls.rotateSpeed
 
@@ -43,22 +39,16 @@ const CustomOrbitControls = (props: any) => {
 		const controls = controlsRef.current
 		const distance = controls.getDistance()
 
-		// Нормализуем расстояние (от 0 до 1)
 		const normalizedDistance =
 			(distance - VIEWER_CONFIG.controls.minDistance) /
 			(VIEWER_CONFIG.controls.maxDistance - VIEWER_CONFIG.controls.minDistance)
 
-		// Базовый коэффициент (чем ближе, тем меньше чувствительность)
 		const baseCoefficient = 1.0 + normalizedDistance * 0.5
 
-		// Применяем коэффициенты
 		controls.panSpeed = VIEWER_CONFIG.controls.panSpeed * baseCoefficient
 		controls.rotateSpeed = VIEWER_CONFIG.controls.rotateSpeed * baseCoefficient
-
-		// console.log(`📐 Дистанция: ${distance.toFixed(1)}, panSpeed: ${controls.panSpeed.toFixed(2)}`)
 	}, [])
 
-	// Отслеживаем изменения для обновления чувствительности
 	useEffect(() => {
 		if (!controlsRef.current) return
 
@@ -70,7 +60,6 @@ const CustomOrbitControls = (props: any) => {
 
 			const currentDistance = controlsRef.current.getDistance()
 
-			// Если расстояние изменилось значительно, обновляем чувствительность
 			if (Math.abs(currentDistance - lastDistance) > 0.1) {
 				lastDistance = currentDistance
 				updateSensitivity()
@@ -120,8 +109,6 @@ const CustomOrbitControls = (props: any) => {
 				camera.position.add(zoomVector.current)
 				controlsRef.current.target.add(zoomVector.current)
 				controlsRef.current.update()
-
-				// Обновляем чувствительность после зума
 				updateSensitivity()
 			}
 		},
@@ -140,7 +127,9 @@ const CustomOrbitControls = (props: any) => {
 		controlsRef.current.target.set(...VIEWER_CONFIG.camera.target)
 		controlsRef.current.update()
 
-		// Обновляем чувствительность после сброса
+		// Отправляем событие сброса камеры
+		emitCustomEvent('reset-camera')
+
 		updateSensitivity()
 	}, [camera, updateSensitivity])
 

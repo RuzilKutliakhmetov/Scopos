@@ -7,6 +7,7 @@ interface ToolbarProps {
 	onOpenTable: () => void
 	isPipelineMode: boolean
 	showBackground: boolean
+	isTableOpen?: boolean // Новый пропс
 }
 
 const ToolbarComponent: React.FC<ToolbarProps> = ({
@@ -16,6 +17,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 	onOpenTable,
 	isPipelineMode,
 	showBackground,
+	isTableOpen = false, // По умолчанию false
 }) => {
 	useEffect(() => {
 		const handleKeyPress = (e: KeyboardEvent) => {
@@ -35,7 +37,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 						break
 					case 't':
 						e.preventDefault()
-						onOpenTable()
+						if (!isTableOpen) onOpenTable()
 						break
 					case '?':
 						e.preventDefault()
@@ -52,6 +54,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 		onBackgroundToggle,
 		onOpenTable,
 		isPipelineMode,
+		isTableOpen, // Добавлен в зависимости
 	])
 
 	const ToolbarButton = React.memo(
@@ -93,15 +96,8 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 
 	return (
 		<>
-			{/* <div className='fixed top-6 left-6 z-50'>
-				<div className='bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-700/50 p-4 cursor-default'>
-					<h1 className='text-xl font-bold text-white'>
-						{VIEWER_CONFIG.model.name}
-					</h1>
-				</div>
-			</div> */}
-
-			<div className='fixed top-6 left-1/2 transform -translate-x-1/2 z-50'>
+			{/* Main toolbar */}
+			<div className='fixed top-2 left-1/2 transform -translate-x-1/2 z-50'>
 				<div className='flex items-center space-x-2 bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-700/50 p-2'>
 					<ToolbarButton
 						onClick={onPipelineToggle}
@@ -175,28 +171,31 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
 				</div>
 			</div>
 
-			<div className='fixed top-6 right-6 z-50'>
-				<ToolbarButton
-					onClick={onOpenTable}
-					title='Открыть таблицу данных'
-					icon={
-						<svg
-							className='w-5 h-5'
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
-							/>
-						</svg>
-					}
-					shortcut='Ctrl+T'
-				/>
-			</div>
+			{/* Table button - скрываем при открытой таблице */}
+			{!isTableOpen && (
+				<div className='fixed top-4 right-6 z-50'>
+					<ToolbarButton
+						onClick={onOpenTable}
+						title='Открыть таблицу данных'
+						icon={
+							<svg
+								className='w-5 h-5'
+								fill='none'
+								stroke='currentColor'
+								viewBox='0 0 24 24'
+							>
+								<path
+									strokeLinecap='round'
+									strokeLinejoin='round'
+									strokeWidth={2}
+									d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
+								/>
+							</svg>
+						}
+						shortcut='Ctrl+T'
+					/>
+				</div>
+			)}
 		</>
 	)
 }

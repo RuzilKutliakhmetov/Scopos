@@ -41,8 +41,6 @@ export const createHighlightMaterial = (color: number, opacity = 0.5) => {
 	})
 }
 
-// НОВЫЕ ФУНКЦИИ:
-
 /**
  * Найти объект по имени в сцене
  */
@@ -109,4 +107,68 @@ export const calculateCameraPosition = (
 		.multiplyScalar(distance)
 
 	return new THREE.Vector3().copy(targetPosition).add(offset)
+}
+
+/**
+ * Умный поиск объекта по имени с кэшированием
+ */
+export const createSmartObjectFinder = (scene: THREE.Object3D) => {
+	const searchCache = new Map<string, THREE.Object3D | null>()
+	const cacheTimeout = 60000 // 1 минута
+
+	return (searchName: string): THREE.Object3D | null => {
+		// Проверить кэш
+		if (searchCache.has(searchName)) {
+			return searchCache.get(searchName)!
+		}
+
+		let foundObject: THREE.Object3D | null = null
+		const searchLower = searchName.toLowerCase()
+
+		// 1. Точное совпадение
+		scene.traverse((object: THREE.Object3D) => {
+			if (object.name && object.name.toLowerCase() === searchLower) {
+				foundObject = object
+			}
+		})
+
+		if (!foundObject) {
+			// 2. Частичное совпадение
+			scene.traverse((object: THREE.Object3D) => {
+				if (object.name && object.name.toLowerCase().includes(searchLower)) {
+					foundObject = object
+				}
+			})
+		}
+
+		if (!foundObject) {
+			// 3. Поиск по числам
+			const numbersInSearch = searchName.match(/\d+/g)
+			if (numbersInSearch) {
+				for (const number of numbersInSearch) {
+					scene.traverse((object: THREE.Object3D) => {
+						if (object.name && object.name.includes(number) && !foundObject) {
+							foundObject = object
+						}
+					})
+					if (foundObject) break
+				}
+			}
+		}
+
+		// Сохранить в кэш
+		searchCache.set(searchName, foundObject)
+
+		// Очистить кэш через время
+		setTimeout(() => searchCache.delete(searchName), cacheTimeout)
+
+		return foundObject
+	}
+}
+
+export const getObjectCenter = (object: THREE.Object3D): THREE.Vector3 => {
+	const box = new THREE.Box3().setFromObject(object)
+	const center = new THREE.Vector3()
+	box.getCenter(center)
+	return center
 }

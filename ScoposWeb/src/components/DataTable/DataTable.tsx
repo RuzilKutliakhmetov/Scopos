@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useState } from 'react'
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { emitCustomEvent, useCustomEvent } from '../../hooks/useCustomEvent'
 import type { EquipmentDetails, EquipmentItem } from '../../types/api'
 import EquipmentDetailsView from './EquipmentDetailsView'
@@ -21,6 +21,11 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 		useState<EquipmentDetails | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+
+	// Рефы для сохранения состояния фильтров
+	const searchFilterRef = useRef<string>('')
+	const sortStateRef = useRef<any>(null)
+	const paginationStateRef = useRef<any>({ pageIndex: 0, pageSize: 20 })
 
 	// Загружаем данные при открытии таблицы
 	useEffect(() => {
@@ -51,6 +56,16 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 			},
 			[isOpen]
 		)
+	)
+
+	// Слушаем события сброса камеры для возврата к таблице
+	useCustomEvent(
+		'reset-camera',
+		useCallback(() => {
+			console.log('📤 Сброс камеры: возврат к списку оборудования')
+			// Сбрасываем выбранное оборудование при сбросе камеры
+			setSelectedEquipment(null)
+		}, [])
 	)
 
 	const fetchEquipmentList = async () => {
@@ -94,13 +109,39 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 		setError(null)
 	}
 
+	// Функция для сохранения состояния фильтров
+	const saveTableState = useCallback(
+		(search: string, sort: any, pagination: any) => {
+			searchFilterRef.current = search
+			sortStateRef.current = sort
+			paginationStateRef.current = pagination
+			console.log('💾 Сохранено состояние таблицы:', {
+				search,
+				sort,
+				pagination,
+			})
+		},
+		[]
+	)
+
+	// Функция для получения сохраненного состояния фильтров
+	const getSavedTableState = useCallback(
+		() => ({
+			search: searchFilterRef.current,
+			sort: sortStateRef.current,
+			pagination: paginationStateRef.current,
+		}),
+		[]
+	)
+
 	if (!isOpen) return null
 
 	return (
 		<div
-			className={`fixed top-0 right-0 h-full w-full max-w-xl z-50 transform transition-all duration-300 ease-in-out ${
+			className={`fixed top-0 right-0 h-full w-full max-w-xl z-40 transform transition-all duration-300 ease-in-out ${
 				isOpen ? 'translate-x-0' : 'translate-x-full'
 			}`}
+			style={{ zIndex: 40 }} // Уменьшен z-index, чтобы Toolbar был выше
 		>
 			<div className='h-full bg-gray-900/95 border-l border-gray-700/50 shadow-2xl flex flex-col overflow-hidden'>
 				<TableHeader
@@ -121,7 +162,8 @@ const DataTableComponent: React.FC<DataTableProps> = ({
 							loading={loading}
 							error={error}
 							onSelectEquipment={handleSelectEquipment}
-							onRefresh={fetchEquipmentList}
+							onSaveState={saveTableState}
+							savedState={getSavedTableState()}
 						/>
 					)}
 				</div>
