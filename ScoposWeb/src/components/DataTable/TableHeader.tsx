@@ -48,7 +48,6 @@ const TableHeaderComponent: React.FC<TableHeaderProps> = ({
 							/>
 						</svg>
 						{filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'}
-						<span className='ml-1 text-gray-400'>({filterCodes.size})</span>
 					</div>
 				)}
 			</div>

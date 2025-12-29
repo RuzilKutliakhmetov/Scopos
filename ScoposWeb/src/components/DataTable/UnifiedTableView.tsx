@@ -284,6 +284,18 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 			const isInFilter =
 				filterMode && filterCodes.has(item.modelCode || item.code)
 
+			const handleClick = () => {
+				if (filterMode && filterCodes.size > 0 && !isInFilter) {
+					console.log(
+						`🚫 Объект "${
+							item.modelCode || item.code
+						}" не доступен для выбора при активном фильтре`
+					)
+					return
+				}
+				onClick()
+			}
+
 			return (
 				<div
 					className={`hover:bg-gray-800/30 transition-colors cursor-pointer absolute w-full flex border-b border-gray-800/50 ${
@@ -297,7 +309,7 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 								? '#ef4444' // red-500
 								: '#f97316', // orange-500
 					}}
-					onClick={onClick}
+					onClick={handleClick}
 				>
 					{/* Код */}
 					<div
@@ -415,43 +427,6 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 				</div>
 			)}
 
-			{/* Индикатор активного фильтра */}
-			{filterMode && (
-				<div className='mx-4 mt-4 mb-2'>
-					<div
-						className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-							filterMode === 'overdue'
-								? 'bg-red-500/20 text-red-300 border border-red-500/30'
-								: 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
-						}`}
-					>
-						<svg
-							className={`w-3 h-3 mr-1 ${
-								filterMode === 'overdue' ? 'text-red-400' : 'text-orange-400'
-							}`}
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d={
-									filterMode === 'overdue'
-										? 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-										: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.346 16.5c-.77.833.192 2.5 1.732 2.5z'
-								}
-							/>
-						</svg>
-						{filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'}
-						<span className='ml-1 text-gray-400'>
-							({filterCodes.size} объектов)
-						</span>
-					</div>
-				</div>
-			)}
-
 			{/* Таблица с виртуализацией */}
 			<div
 				ref={tableContainerRef}
@@ -542,10 +517,6 @@ const UnifiedTableView: React.FC<UnifiedTableViewProps> = ({
 			<div className='p-4 border-t border-gray-700/50 flex items-center justify-between'>
 				<div className='text-sm text-gray-400 cursor-default'>
 					{total > 0 ? `${start}-${end} из ${total}` : 'Нет данных'}
-					{filterMode &&
-						` • Фильтр: ${
-							filterMode === 'overdue' ? 'Просроченные' : 'Дефектные'
-						}`}
 				</div>
 
 				{pageCount > 1 && (

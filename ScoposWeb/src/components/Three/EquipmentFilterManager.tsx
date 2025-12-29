@@ -28,7 +28,17 @@ const EquipmentFilterManager: React.FC = () => {
 		return new THREE.MeshBasicMaterial({
 			color: 0x888888,
 			transparent: true,
-			opacity: 0.1, // 90% прозрачности
+			opacity: 0.1,
+			depthWrite: true,
+		})
+	}, [])
+
+	// Материал для заблокированных объектов (еще более прозрачный)
+	const blockedMaterial = useMemo(() => {
+		return new THREE.MeshBasicMaterial({
+			color: 0x444444,
+			transparent: true,
+			opacity: 0.3,
 			depthWrite: true,
 		})
 	}, [])
@@ -67,7 +77,30 @@ const EquipmentFilterManager: React.FC = () => {
 
 		// Подсчет найденных объектов
 		let highlightedCount = 0
-		let dimmedCount = 0
+		let blockedCount = 0
+
+		// Функция для проверки соответствия объекта фильтру
+		const checkObjectAgainstFilter = (objectName: string): boolean => {
+			// Ищем объект по имени и проверяем его коды
+			const foundObject = smartFindObject(objectName)
+			if (!foundObject) return false
+
+			// Проверяем все коды объекта (если их несколько в имени)
+			const objectCodes = objectName.split(/[^0-9a-zA-Z-]/).filter(Boolean)
+
+			for (const code of objectCodes) {
+				if (filterCodes.has(code)) {
+					return true
+				}
+			}
+
+			// Также проверяем полное имя
+			if (filterCodes.has(objectName)) {
+				return true
+			}
+
+			return false
+		}
 
 		// Проходим по всем объектам сцены
 		scene.traverse((object: THREE.Object3D) => {
@@ -76,36 +109,27 @@ const EquipmentFilterManager: React.FC = () => {
 			}
 
 			const mesh = object as THREE.Mesh
-			let shouldHighlight = false
 
-			// Проверяем, соответствует ли объект фильтру
-			for (const code of filterCodes) {
-				const foundObject = smartFindObject(code)
-				if (foundObject && foundObject.uuid === mesh.uuid) {
-					shouldHighlight = true
-					break
-				}
+			// Сохраняем оригинальный материал
+			if (!originalMaterials.has(mesh.uuid)) {
+				originalMaterials.set(mesh.uuid, mesh.material)
 			}
 
-			if (shouldHighlight) {
+			const matchesFilter = checkObjectAgainstFilter(object.name)
+
+			if (matchesFilter) {
 				// Объект соответствует фильтру - выделяем цветом
-				if (!originalMaterials.has(mesh.uuid)) {
-					originalMaterials.set(mesh.uuid, mesh.material)
-				}
 				mesh.material = highlightMaterial
 				highlightedCount++
 			} else {
-				// Объект не соответствует фильтру - затемняем
-				if (!originalMaterials.has(mesh.uuid)) {
-					originalMaterials.set(mesh.uuid, mesh.material)
-				}
-				mesh.material = dimmedMaterial
-				dimmedCount++
+				// Объект не соответствует фильтру - блокируем (делаем почти невидимым)
+				mesh.material = blockedMaterial
+				blockedCount++
 			}
 		})
 
 		console.log(
-			`✅ Применен фильтр: ${highlightedCount} выделено, ${dimmedCount} затемнено`
+			`✅ Применен фильтр: ${highlightedCount} выделено, ${blockedCount} заблокировано`
 		)
 
 		// Очистка при размонтировании
@@ -125,6 +149,7 @@ const EquipmentFilterManager: React.FC = () => {
 		smartFindObject,
 		highlightMaterial,
 		dimmedMaterial,
+		blockedMaterial,
 		originalMaterials,
 	])
 

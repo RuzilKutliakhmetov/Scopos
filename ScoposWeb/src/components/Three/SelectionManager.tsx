@@ -2,6 +2,7 @@ import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { VIEWER_CONFIG } from '../../config/viewerConfig'
+import { useEquipmentFilter } from '../../context/EquipmentFilterContext'
 import { useSelection } from '../../context/SelectionContext'
 import { emitCustomEvent, useCustomEvent } from '../../hooks/useCustomEvent'
 import { createSmartObjectFinder } from '../../utils/scene-utils'
@@ -9,6 +10,7 @@ import { createSmartObjectFinder } from '../../utils/scene-utils'
 const SelectionManager: React.FC = () => {
 	const { camera, gl, scene } = useThree()
 	const { selected, select, deselect, clear, setHovered } = useSelection()
+	const { filterMode, filterCodes } = useEquipmentFilter()
 
 	const raycaster = useRef(new THREE.Raycaster())
 	const mouse = useRef(new THREE.Vector2())
@@ -39,6 +41,44 @@ const SelectionManager: React.FC = () => {
 	const smartFindObject = useMemo(() => {
 		return createSmartObjectFinder(scene)
 	}, [scene])
+
+	// Проверяет, соответствует ли объект активному фильтру
+	const checkObjectInFilter = useCallback(
+		(objectName: string): boolean => {
+			if (!filterMode || filterCodes.size === 0) return true
+
+			// Ищем объект по имени и проверяем его коды
+			const foundObject = smartFindObject(objectName)
+			if (!foundObject) return false
+
+			// Проверяем все коды объекта (если их несколько в имени)
+			const objectCodes = objectName.split(/[^0-9a-zA-Z-]/).filter(Boolean)
+
+			for (const code of objectCodes) {
+				if (filterCodes.has(code)) {
+					return true
+				}
+			}
+
+			// Также проверяем полное имя
+			if (filterCodes.has(objectName)) {
+				return true
+			}
+
+			return false
+		},
+		[filterMode, filterCodes, smartFindObject]
+	)
+
+	// Проверяет, можно ли выделить объект
+	const canSelectObject = useCallback(
+		(object: THREE.Object3D): boolean => {
+			if (!filterMode || filterCodes.size === 0) return true
+
+			return checkObjectInFilter(object.name)
+		},
+		[filterMode, filterCodes, checkObjectInFilter]
+	)
 
 	// Мемоизированная функция для получения объекта под курсором с debounce
 	const getHitObject = useMemo(() => {
@@ -79,13 +119,20 @@ const SelectionManager: React.FC = () => {
 					current &&
 					current.layers.isEnabled(VIEWER_CONFIG.layers.pipeline)
 				) {
-					return current
+					// Проверяем, можно ли выделить объект при активном фильтре
+					if (filterMode && filterCodes.size > 0) {
+						if (canSelectObject(current)) {
+							return current
+						}
+					} else {
+						return current
+					}
 				}
 			}
 
 			return null
 		}
-	}, [camera, gl, scene])
+	}, [camera, gl, scene, filterMode, filterCodes, canSelectObject])
 
 	// Мемоизированная функция для установки цвета объекту
 	const setObjectColor = useMemo(() => {
@@ -222,26 +269,53 @@ const SelectionManager: React.FC = () => {
 
 			setHovered(null)
 
-			if (hit && !selectionMap.current.has(hit.uuid)) {
-				hoverTimeout.current = window.setTimeout(() => {
-					setObjectColor(
-						hit,
-						VIEWER_CONFIG.selection.hoverColor,
-						hoverMap.current
-					)
-					setHovered(hit.uuid)
-				}, VIEWER_CONFIG.selection.hoverDelay)
-			}
+			if (hit) {
+				// Проверяем, можно ли выделить объект
+				const canSelect = canSelectObject(hit)
 
-			gl.domElement.style.cursor = hit ? 'pointer' : 'default'
+				hoverTimeout.current = window.setTimeout(() => {
+					if (canSelect && !selectionMap.current.has(hit.uuid)) {
+						setObjectColor(
+							hit,
+							VIEWER_CONFIG.selection.hoverColor,
+							hoverMap.current
+						)
+						setHovered(hit.uuid)
+					}
+				}, VIEWER_CONFIG.selection.hoverDelay)
+
+				// Меняем курсор в зависимости от возможности выделения
+				gl.domElement.style.cursor = canSelect ? 'pointer' : 'not-allowed'
+			} else {
+				gl.domElement.style.cursor = 'default'
+			}
 		},
-		[getHitObject, resetObjectColor, setObjectColor, setHovered, gl]
+		[
+			getHitObject,
+			resetObjectColor,
+			setObjectColor,
+			setHovered,
+			gl,
+			canSelectObject,
+		]
 	)
 
 	// Функция выделения объекта по имени
 	const selectObjectByName = useCallback(
 		(objectName: string) => {
 			console.log(`🎯 Выделение объекта по имени: ${objectName}`)
+
+			// Проверяем, можно ли выделить объект при активном фильтре
+			if (
+				filterMode &&
+				filterCodes.size > 0 &&
+				!checkObjectInFilter(objectName)
+			) {
+				console.warn(
+					`❌ Объект "${objectName}" не соответствует активному фильтру "${filterMode}"`
+				)
+				return false
+			}
 
 			const foundObject = smartFindObject(objectName)
 
@@ -270,7 +344,16 @@ const SelectionManager: React.FC = () => {
 			console.log(`✅ Объект выделен: ${foundObject.name}`)
 			return true
 		},
-		[smartFindObject, resetObjectColor, setObjectColor, select, deselect]
+		[
+			smartFindObject,
+			resetObjectColor,
+			setObjectColor,
+			select,
+			deselect,
+			filterMode,
+			filterCodes,
+			checkObjectInFilter,
+		]
 	)
 
 	// Обработчик события выделения из таблицы
@@ -307,6 +390,14 @@ const SelectionManager: React.FC = () => {
 					hoverMap.current.delete(hitUuid)
 				}
 				setHovered(null)
+
+				// Проверяем, можно ли выделить объект при активном фильтре
+				if (filterMode && filterCodes.size > 0 && !canSelectObject(hit)) {
+					console.log(
+						`🚫 Объект "${hit.name}" не доступен для выделения при активном фильтре "${filterMode}"`
+					)
+					return
+				}
 
 				if (selectionMap.current.has(hitUuid)) {
 					// Снимаем выделение
@@ -366,6 +457,9 @@ const SelectionManager: React.FC = () => {
 			select,
 			deselect,
 			setHovered,
+			filterMode,
+			filterCodes,
+			canSelectObject,
 		]
 	)
 
@@ -429,6 +523,14 @@ const SelectionManager: React.FC = () => {
 			}
 		})
 	}, [selected, resetObjectColor])
+
+	// Сбрасываем выделения при изменении фильтра
+	useEffect(() => {
+		if (filterMode && filterCodes.size > 0) {
+			console.log(`🔄 Фильтр изменен: очищаем выделения`)
+			clearAllSelections()
+		}
+	}, [filterMode, filterCodes, clearAllSelections])
 
 	return null
 }
