@@ -1,1 +1,7 @@
 /ScoposServer/.vs
+/ScoposWeb/models
+/ScoposServer/obj
+/ScoposServer/bin
+
+/ScoposServer/bin/Debug/net8.0
+/ScoposServer/obj/Debug/net8.0/EndpointInfo
