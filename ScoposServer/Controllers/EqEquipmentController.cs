@@ -20,7 +20,16 @@ public class EqEquipmentController : ControllerBase
         _mapper = mapper;
     }
 
-    /// Получить список оборудования (для выбора модели)
+    /// <summary>
+    /// Получает список всего активного оборудования в кратком формате.
+    /// </summary>
+    /// <remarks>
+    /// Возвращает все оборудование, не помеченное как удаленное (IsDel = false).
+    /// Сортировка по наименованию оборудования (Name) по возрастанию.
+    /// Используется для выпадающих списков, таблиц обзора, навигации.
+    /// </remarks>
+    /// <returns>Список EqEquipmentShortDto с базовой информацией об оборудовании</returns>
+    /// <response code="200">Успешно получен список оборудования</response>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EqEquipmentShortDto>>> GetAll()
     {
@@ -31,12 +40,22 @@ public class EqEquipmentController : ControllerBase
         return Ok(_mapper.Map<IEnumerable<EqEquipmentShortDto>>(entities));
     }
 
-    /// Получить паспорт оборудования по Code
+    /// <summary>
+    /// Получает полный паспорт оборудования по его уникальному коду.
+    /// </summary>
+    /// <param name="code">Уникальный код оборудования (например: "EQ001", "EQ032")</param>
+    /// <remarks>
+    /// Возвращает все технические характеристики, учетные данные, 
+    /// информацию о расположении и статусах.
+    /// </remarks>
+    /// <returns>EqEquipmentPassportDto с полной информацией об оборудовании</returns>
+    /// <response code="200">Успешно получен паспорт оборудования</response>
+    /// <response code="404">Оборудование с указанным кодом не найдено</response>
     [HttpGet("{code}")]
     public async Task<ActionResult<EqEquipmentPassportDto>> GetByCode(string code)
     {
         var entity = await _context.EqEquipments
-            .FirstOrDefaultAsync(x => x.ModelCode == code);
+            .FirstOrDefaultAsync(x => x.Code == code);  // Было ModelCode
 
         if (entity == null)
             return NotFound();
@@ -45,8 +64,17 @@ public class EqEquipmentController : ControllerBase
     }
 
     /// <summary>
-    /// Получить ModelCode с просроченной ЕПБ (базовый запрос как в SQL)
+    /// Получает список кодов 3D-моделей (ModelCode) оборудования 
+    /// с просроченной датой следующей проверки ЕПБ.
     /// </summary>
+    /// <remarks>
+    /// Критерий отбора: EpbNextDate меньше текущей даты (DateTime.UtcNow).
+    /// Возвращаются только модели с непустым ModelCode.
+    /// Используется для визуализации просроченных объектов в 3D-сцене.
+    /// </remarks>
+    /// <returns>Список уникальных ModelCode оборудования с просроченной ЕПБ</returns>
+    /// <response code="200">Успешно получен список ModelCode</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("overdue-simple")]
     public async Task<ActionResult<IEnumerable<string>>> GetOverdueModelCodesSimple()
     {
@@ -65,6 +93,22 @@ public class EqEquipmentController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Создает новую запись оборудования в системе.
+    /// </summary>
+    /// <param name="dto">Объект передачи данных с информацией о новом оборудовании</param>
+    /// <remarks>
+    /// Обязательное поле: Code (уникальный идентификатор).
+    /// 
+    /// Валидация:
+    /// - Проверка на существование оборудования с таким Code
+    /// - При успехе: IsDel автоматически устанавливается в false
+    /// 
+    /// Остальные поля опциональны и маппятся из DTO в сущность автоматически.
+    /// </remarks>
+    /// <returns>Статус 201 (Created) с ссылкой на GetByCode</returns>
+    /// <response code="201">Оборудование успешно создано</response>
+    /// <response code="409">Оборудование с указанным Code уже существует</response>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateEqEquipmentDto dto)
     {
@@ -87,7 +131,17 @@ public class EqEquipmentController : ControllerBase
         );
     }
 
-    /// Получить паспорт по modelCode (из 3D-модели)
+    /// <summary>
+    /// Получает полный паспорт оборудования по коду 3D-модели.
+    /// </summary>
+    /// <param name="modelCode">Код 3D-модели оборудования (например: "MDL-1001", "MDL-1032")</param>
+    /// <remarks>
+    /// Используется для интеграции с CAD/3D-системами.
+    /// По коду модели находит соответствующее оборудование и возвращает его паспорт.
+    /// </remarks>
+    /// <returns>EqEquipmentPassportDto с полной информацией об оборудовании</returns>
+    /// <response code="200">Успешно получен паспорт оборудования</response>
+    /// <response code="404">Паспорт для указанной модели не найден</response>
     [HttpGet("by-model/{modelCode}")]
     public async Task<ActionResult<EqEquipmentPassportDto>> GetByModelCode(string modelCode)
     {

@@ -844,11 +844,6 @@
           "orderInfo": {
             "type": "string",
             "nullable": true
-          },
-          "createdDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
           }
         },
         "additionalProperties": false

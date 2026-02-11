@@ -26,8 +26,16 @@ public class EqNotifyController : ControllerBase
     }
 
     /// <summary>
-    /// Получить ModelCode оборудования с уведомлениями (базовый запрос)
+    /// Получает список уникальных кодов 3D-моделей (ModelCode) оборудования,
+    /// которое имеет хотя бы одно связанное уведомление.
     /// </summary>
+    /// <remarks>
+    /// Пример результата: ["MDL-1001", "MDL-1002", "MDL-1003"]
+    /// Используется для фильтрации и навигации в 3D-визуализации.
+    /// </remarks>
+    /// <returns>Список уникальных ModelCode, отсортированный по возрастанию</returns>
+    /// <response code="200">Успешно получен список ModelCode</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("equipment/modelcodes")]
     public async Task<ActionResult<IEnumerable<string>>> GetEquipmentModelCodesWithNotifies()
     {
@@ -54,8 +62,16 @@ public class EqNotifyController : ControllerBase
     }
 
     /// <summary>
-    /// Получить короткую информацию об оборудовании с уведомлениями
+    /// Получает краткую информацию об оборудовании, имеющем уведомления,
+    /// с агрегированной статистикой (общее количество, критичные, дата последнего).
     /// </summary>
+    /// <remarks>
+    /// Возвращает только оборудование с ModelCode != null и наличием уведомлений.
+    /// Сортировка: сначала по убыванию количества уведомлений, затем по имени.
+    /// </remarks>
+    /// <returns>Список EquipmentWithNotifyShortDto со статистикой по уведомлениям</returns>
+    /// <response code="200">Успешно получен список оборудования</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("equipment/short")]
     public async Task<ActionResult<IEnumerable<EquipmentWithNotifyShortDto>>> GetEquipmentWithNotifiesShort()
     {
@@ -96,8 +112,18 @@ public class EqNotifyController : ControllerBase
     }
 
     /// <summary>
-    /// Получить оборудование с уведомлениями по ModelCode
+    /// Получает детальную информацию об оборудовании и все связанные с ним уведомления
+    /// по коду 3D-модели (ModelCode).
     /// </summary>
+    /// <param name="modelCode">Код 3D-модели оборудования (например: "MDL-1001")</param>
+    /// <remarks>
+    /// Если оборудование найдено, возвращает полную информацию о нём
+    /// и полный список всех уведомлений, привязанных к этому оборудованию.
+    /// </remarks>
+    /// <returns>EquipmentWithNotifyDto с информацией об оборудовании и списком уведомлений</returns>
+    /// <response code="200">Успешно получены данные оборудования и уведомлений</response>
+    /// <response code="404">Оборудование с указанным ModelCode не найдено</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("equipment/model/{modelCode}")]
     public async Task<ActionResult<EquipmentWithNotifyDto>> GetEquipmentByModelCodeWithNotifies(string modelCode)
     {
@@ -134,8 +160,17 @@ public class EqNotifyController : ControllerBase
     }
 
     /// <summary>
-    /// Получить уведомления по коду оборудования
+    /// Получает все уведомления, привязанные к конкретному оборудованию по его коду.
     /// </summary>
+    /// <param name="eoCode">Код оборудования (например: "EQ001", "EQ002")</param>
+    /// <remarks>
+    /// Возвращает полный список уведомлений для указанного оборудования.
+    /// Если уведомлений нет - возвращает 404.
+    /// </remarks>
+    /// <returns>Список EqNotifyDto с детальной информацией по каждому уведомлению</returns>
+    /// <response code="200">Успешно получен список уведомлений</response>
+    /// <response code="404">Уведомления для указанного оборудования не найдены</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("by-equipment/{eoCode}")]
     public async Task<ActionResult<IEnumerable<EqNotifyDto>>> GetNotifiesByEquipment(string eoCode)
     {
@@ -158,8 +193,20 @@ public class EqNotifyController : ControllerBase
     }
 
     /// <summary>
-    /// Получить статистику по уведомлениям
+    /// Получает агрегированную статистику по всем уведомлениям в системе.
     /// </summary>
+    /// <remarks>
+    /// Возвращает комплексную статистику:
+    /// - Общее количество уведомлений
+    /// - Количество оборудования с уведомлениями
+    /// - Распределение по уровням критичности (с процентами)
+    /// - Распределение по статусам устранения
+    /// - ТОП-10 оборудования с наибольшим количеством уведомлений
+    /// - Время формирования отчета (GeneratedAt)
+    /// </remarks>
+    /// <returns>Анонимный объект со статистическими данными</returns>
+    /// <response code="200">Успешно получена статистика</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("stats")]
     public async Task<ActionResult<object>> GetNotifyStats()
     {
@@ -220,8 +267,21 @@ public class EqNotifyController : ControllerBase
     }
 
     /// <summary>
-    /// Получить уведомления с фильтрами
+    /// Получает отфильтрованный список уведомлений по заданным критериям.
     /// </summary>
+    /// <param name="eoCode">Фильтр по коду оборудования (частичное совпадение)</param>
+    /// <param name="criticality">Фильтр по уровню критичности (точное совпадение)</param>
+    /// <param name="status">Фильтр по статусу устранения (точное совпадение)</param>
+    /// <param name="fromDate">Фильтр по дате создания: начало периода</param>
+    /// <param name="toDate">Фильтр по дате создания: конец периода</param>
+    /// <param name="qmType">Фильтр по типу уведомления (точное совпадение)</param>
+    /// <remarks>
+    /// Все параметры опциональны. Комбинация фильтров работает через AND.
+    /// Поддерживается частичное совпадение для eoCode (Contains).
+    /// </remarks>
+    /// <returns>Список EqNotifyDto, соответствующий критериям фильтрации</returns>
+    /// <response code="200">Успешно получен отфильтрованный список</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("filtered")]
     public async Task<ActionResult<IEnumerable<EqNotifyDto>>> GetNotifiesFiltered(
         [FromQuery] string? eoCode = null,
@@ -260,8 +320,21 @@ public class EqNotifyController : ControllerBase
     }
 
     /// <summary>
-    /// Создать новое уведомление
+    /// Создает новое уведомление в системе.
     /// </summary>
+    /// <param name="dto">Объект передачи данных с информацией о новом уведомлении</param>
+    /// <remarks>
+    /// Обязательные поля: QmCode, FeCode, EoCode.
+    /// Перед созданием выполняется проверка:
+    /// - ModelState.IsValid (атрибуты Required)
+    /// - Существование оборудования с указанным Code (EoCode)
+    /// - Отсутствие дубликата по QmCode (уникальный ключ)
+    /// </remarks>
+    /// <returns>Созданное уведомление в формате EqNotifyDto</returns>
+    /// <response code="201">Уведомление успешно создано</response>
+    /// <response code="400">ModelState невалиден или оборудование не найдено</response>
+    /// <response code="409">Уведомление с таким QmCode уже существует</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpPost]
     public async Task<ActionResult<EqNotifyDto>> CreateNotify([FromBody] CreateEqNotifyDto dto)
     {
